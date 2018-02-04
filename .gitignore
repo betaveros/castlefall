@@ -1,0 +1,4 @@
+.mypy_cache
+castlefall-config.ts
+dist
+wordlists
