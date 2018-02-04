@@ -241,7 +241,7 @@ class CastlefallFactory(WebSocketServerFactory):
 if __name__ == "__main__":
     log.startLogging(sys.stdout)
 
-    if sys.argv and sys.argv[0] == "prod":
+    if len(sys.argv) > 1 and sys.argv[1] == "prod":
         print("Prod server")
         factory = CastlefallFactory("ws://127.0.0.1:8372")
     else:
