@@ -6,6 +6,7 @@ from twisted.web.static import File
 from twisted.python import log
 from twisted.web.server import Site
 from twisted.internet import reactor
+import itertools
 import codecs
 import time
 import os
@@ -26,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.2"
+version = "v0.3"
 
 wordlist_directory = 'wordlists'
 
@@ -49,7 +50,7 @@ class CastlefallProtocol(WebSocketServerProtocol):
         data = json.loads(payload)
         if 'name' in data:
             room_name = data['room']
-            name = data['name']
+            name = data.get('name')
             print('{}: registering as {}'.format(self.peer, name))
             self.factory.register(room_name, name, self)
         if 'start' in data:
@@ -65,13 +66,14 @@ def json_to_bytes(obj: dict) -> bytes:
     return codecs.encode(json.dumps(obj), 'utf-8')
 
 class ClientStatus:
-    def __init__(self, room: str, name: str) -> None:
+    def __init__(self, room: str, name: Optional[str]) -> None:
         self.room = room
         self.name = name
 
 class Room:
     def __init__(self) -> None:
         self.d: Dict[str, CastlefallProtocol] = {}
+        self.spectators: Dict[str, CastlefallProtocol] = {}
         self.round = 0
         self.last_start = time.time()
         self.players_in_round: List[str] = []
@@ -91,10 +93,23 @@ class Room:
         self.d[name] = p
 
     def get_clients(self) -> Iterable[CastlefallProtocol]:
-        return self.d.values()
+        return itertools.chain(self.d.values(), self.spectators.values())
 
-    def get_named_clients(self) -> Iterable[Tuple[str, CastlefallProtocol]]:
+    def add_spectator(self, client: CastlefallProtocol) -> None:
+        self.spectators[client.peer] = client
+
+    def get_num_spectators(self) -> int:
+        return len(self.spectators)
+
+    def delete_spectator(self, client: CastlefallProtocol) -> None:
+        if client.peer in self.spectators:
+            del self.spectators[client.peer]
+
+    def get_named_player_clients(self) -> Iterable[Tuple[str, CastlefallProtocol]]:
         return self.d.items()
+
+    def get_named_all_clients(self) -> Iterable[Tuple[Optional[str], CastlefallProtocol]]:
+        return itertools.chain(self.d.items(), zip(itertools.repeat(None), self.spectators.values()))
 
     def delete_player_client(self, name: str) -> None:
         del self.d[name]
@@ -132,7 +147,7 @@ class Room:
             wordcount = 18
 
         words = self.select_words(val['wordlist'], wordcount)
-        named_clients = list(self.get_named_clients())
+        named_clients = list(self.get_named_player_clients())
         random.shuffle(named_clients)
         half = len(named_clients) // 2
         word1, word2 = random.sample(words, 2)
@@ -161,25 +176,35 @@ class CastlefallFactory(WebSocketServerFactory):
     def players_in_room(self, room: str) -> List[str]:
         return list(sorted(self.rooms[room].get_player_names()))
 
-    def register(self, room_name: str, name: str, client: CastlefallProtocol) -> None:
+    def register(self, room_name: str, name: Optional[str],
+            client: CastlefallProtocol) -> None:
         room = self.rooms[room_name]
-        if room.has_player(name):
-            old_client = room.get_player_client(name)
-            self.send(old_client, {
-                'msg': 'Disconnected: your name was taken.',
-            })
-            del self.status_for_peer[old_client.peer]
-            # del room_dict[name] # will get overwritten
+        if name:
+            if room.has_player(name):
+                old_client = room.get_player_client(name)
+                self.send(old_client, {
+                    'msg': 'Disconnected: your name was taken.',
+                })
+                del self.status_for_peer[old_client.peer]
+                # del room_dict[name] # will get overwritten
 
-        room.set_player_client(name, client)
-        self.status_for_peer[client.peer] = ClientStatus(room_name, name)
-        self.broadcast(room, {'players': room.get_player_names()})
+            room.set_player_client(name, client)
+            self.status_for_peer[client.peer] = ClientStatus(room_name, name)
+            self.broadcast(room, {'players': room.get_player_names()})
+        else:
+            # spectator
+            room.add_spectator(client)
+            self.status_for_peer[client.peer] = ClientStatus(room_name, None)
+            self.broadcast(room, {'spectators': room.get_num_spectators()})
+
         self.send(client, {
+            'players': room.get_player_names(),
+            'spectators': room.get_num_spectators(),
             'room': room_name,
             'round': room.round,
             'playersinround': room.players_in_round,
             'words': self.words,
-            'word': room.get_assigned_word(name),
+            'word': room.get_assigned_word(name) if name else None,
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,
         })
@@ -194,13 +219,17 @@ class CastlefallFactory(WebSocketServerFactory):
                     room.delete_player_client(status.name)
                 else:
                     print("client's peer had name, but its name wasn't there :(")
-            self.broadcast(room, {'players': room.get_player_names()})
+            else:
+                # spectator
+                room.delete_spectator(client)
+            self.broadcast(room, {
+                'players': room.get_player_names(),
+                'spectators': room.get_num_spectators(),
+            })
 
     def kick(self, client: CastlefallProtocol, name: str):
-        if client.peer not in self.status_for_peer:
-            return
-        room_name = self.status_for_peer[client.peer].room
-        room = self.rooms[room_name]
+        room = self.room_playing_in(client)
+        if not room: return
         if room.has_player(name):
             client = room.get_player_client(name)
             self.send(client, {
@@ -221,21 +250,26 @@ class CastlefallFactory(WebSocketServerFactory):
     def send(self, client: CastlefallProtocol, obj: dict) -> None:
         client.sendMessage(json_to_bytes(obj))
 
-    def room_of(self, client: CastlefallProtocol) -> Optional[Room]:
+    def room_playing_in(self, client: CastlefallProtocol) -> Optional[Room]:
+        """The room the client is playing in.
+
+        If the client is not playing in a room, including if the client is
+        spectating, return None."""
         if client.peer in self.status_for_peer:
-            return self.rooms[self.status_for_peer[client.peer].room]
-        else:
-            return None
+            status = self.status_for_peer[client.peer]
+            if status.name:
+                return self.rooms[status.room]
+        return None
 
     def start_round(self, client: CastlefallProtocol, val: dict) -> None:
-        room = self.room_of(client)
-        if room.start_round(val):
-            for name, client in room.get_named_clients():
+        room = self.room_playing_in(client)
+        if room and room.start_round(val):
+            for name, client in room.get_named_all_clients():
                 client.sendMessage(json_to_bytes({
                     'round': room.round,
                     'playersinround': room.players_in_round,
                     'words': room.get_words_shuffled(),
-                    'word': room.get_assigned_word(name),
+                    'word': room.get_assigned_word(name) if name else None,
                 }))
 
 if __name__ == "__main__":

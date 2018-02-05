@@ -1,6 +1,8 @@
 import { websocketURL } from "./castlefall-config";
 
-const clientVersion = "v0.2";
+const clientVersion = "v0.3";
+
+let myName: string|undefined = undefined;
 
 function makeKicker(ws: WebSocket, name: string): Element {
 	var button = document.createElement('button');
@@ -26,7 +28,9 @@ function setPlayers(ws: WebSocket, list: string[]): void {
 		for (var i = i0; i < iend; i++) {
 			var name = list[i];
 			var td = document.createElement('td');
-			td.appendChild(makeKicker(ws, name));
+			if (myName) {
+				td.appendChild(makeKicker(ws, name));
+			}
 			td.appendChild(document.createTextNode(name));
 			tr.appendChild(td);
 		}
@@ -141,16 +145,12 @@ function displayMessage(msg: string): void {
 	document.getElementById("msg").appendChild(div);
 }
 function getName(): string {
-	let name = prompt('Enter your name');
-	while (!name) {
-		name = prompt('Enter your name!');
-	}
-	return name;
+	return prompt('Enter your name');
 }
 window.addEventListener("load", function() {
 	document.getElementById('cliv').textContent = clientVersion;
-	const name = getName();
-	document.getElementById('name').textContent = name;
+	myName = getName();
+	document.getElementById('name').textContent = myName || 'spectating (reload to join)';
 	const room = window.location.hash || '#lobby';
 	document.getElementById('room').textContent = room;
 	document.getElementById('roomhelp').addEventListener('click', function() {
@@ -159,7 +159,7 @@ window.addEventListener("load", function() {
 	const ws = new WebSocket(websocketURL);
 	ws.onopen = function () {
 		ws.send(JSON.stringify({
-			name: name,
+			name: myName,
 			room: room,
 		}));
 	};
@@ -196,18 +196,24 @@ window.addEventListener("load", function() {
 			});
 		}
 	};
-	document.getElementById('newround').addEventListener('click', function() {
-		let wordlistNode = document.getElementById('wordlists') as HTMLSelectElement;
-		let wordcountNode = document.getElementById('wordcount') as HTMLInputElement;
-		const wordlist = wordlistNode.options[wordlistNode.selectedIndex].value;
-		ws.send(JSON.stringify({
-			start: {
-				round: lastRound,
-				wordlist: wordlist,
-				wordcount: wordcountNode.value,
-			},
-		}));
-	});
+	if (myName) {
+		document.getElementById('newround').addEventListener('click', function() {
+			let wordlistNode = document.getElementById('wordlists') as HTMLSelectElement;
+			let wordcountNode = document.getElementById('wordcount') as HTMLInputElement;
+			const wordlist = wordlistNode.options[wordlistNode.selectedIndex].value;
+			ws.send(JSON.stringify({
+				start: {
+					round: lastRound,
+					wordlist: wordlist,
+					wordcount: wordcountNode.value,
+				},
+			}));
+		});
+	} else {
+		document.getElementById('newround').setAttribute('disabled', 'disabled');
+		document.getElementById('wordlists').setAttribute('disabled', 'disabled');
+		document.getElementById('wordcount').setAttribute('disabled', 'disabled');
+	}
 	document.getElementById('timer').addEventListener('click', function() {
 		startMillis = new Date().getTime();
 		updateTime();

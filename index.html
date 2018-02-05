@@ -47,6 +47,12 @@ input#wordcount:active, input#wordcount:focus {
 	background-color: #dde;
 	background-image: linear-gradient(to bottom,#dde 0,#eef 100%);
 }
+input#wordcount[disabled], select#wordlists[disabled], input#wordcount:active[disabled], input#wordcount:focus[disabled] {
+	cursor: not-allowed;
+	background-color: #ccc;
+	background-image: none;
+	box-shadow: none;
+}
 select#wordlists {
 	padding: 0 0.5em;
 	appearance: none;
@@ -62,16 +68,21 @@ button {
 	white-space: nowrap;
 	vertical-align: middle;
 	cursor: pointer;
-	border: 1px solid transparent;
+	border: 1px solid #224;
 	border-radius: 9999px;
 	color: #fff;
 	background-color: #224;
 	background-image: linear-gradient(to bottom,#668 0,#224 100%);
 	background-repeat: repeat-x;
-	border-color: #224;
 	text-shadow: 0 -1px 0 rgba(0,0,0,.2);
 	box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
 	margin-right: 0.5em;
+}
+button[disabled] {
+	cursor: not-allowed;
+	background-image: none;
+	background-color: #999;
+	border-color: #999;
 }
 #roomhelp {
 	font-size: 50%;
