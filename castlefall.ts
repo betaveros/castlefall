@@ -1,6 +1,6 @@
 import { websocketURL } from "./castlefall-config";
 
-const clientVersion = "v0.3.1";
+const clientVersion = "v0.3.2";
 
 let myName: string|undefined = undefined;
 
