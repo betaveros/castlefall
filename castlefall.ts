@@ -1,6 +1,6 @@
 import { websocketURL } from "./castlefall-config";
 
-const clientVersion = "v0.3";
+const clientVersion = "v0.3.1";
 
 let myName: string|undefined = undefined;
 
@@ -149,10 +149,17 @@ function getName(): string {
 }
 window.addEventListener("load", function() {
 	document.getElementById('cliv').textContent = clientVersion;
-	myName = getName();
-	document.getElementById('name').textContent = myName || 'spectating (reload to join)';
 	const room = window.location.hash || '#lobby';
 	document.getElementById('room').textContent = room;
+	myName = getName();
+	if (myName) {
+		document.getElementById('name').textContent = myName;
+	} else {
+		document.getElementById('name').textContent = 'spectating ';
+		const reloadSup = document.createElement('sup');
+		reloadSup.textContent = '(reload to join) ';
+		document.getElementById('name').appendChild(reloadSup);
+	}
 	document.getElementById('roomhelp').addEventListener('click', function() {
 		alert("Append #roomname to the URL and reload to go to a new room. (It's hacky. PRs welcome.)");
 	});
