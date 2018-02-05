@@ -184,6 +184,13 @@ window.addEventListener("load", function() {
 		if (data.players) {
 			setPlayers(ws, data.players);
 		}
+		if (data.spectators) {
+			let str = data.spectators + " spectator";
+			if (data.spectators > 1) { str += "s"; }
+			document.getElementById('spectators').textContent = str;
+		} else if (data.spectators === 0) {
+			document.getElementById('spectators').textContent = "";
+		}
 		if (data.round) {
 			createRound(data.round, data.playersinround, data.words, data.word);
 		}
