@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="shortcut icon" href="castlefall.ico" type="image/x-icon" />
 <style>
 #wrap { max-width: 42em; margin: 0 auto; }
+#icon { vertical-align: middle; }
 body { font-family: sans-serif; margin: 0; padding: 0.5em; }
 #time { font-family: monospace; font-size: 150%; }
 #msg {
@@ -111,7 +113,7 @@ button#newround {
 </head>
 <body>
 	<div id="wrap">
-	<h1>Castlefall</h1>
+		<h1><img id="icon" src="castlefall.png">Castlefall</h1>
 	<div>You are <span id="name"></span> in <span id="room"></span><sup><button id="roomhelp">?</button></sup> (client <span id="cliv"></span> / server <span id="serv"></span> / <a href="https://github.com/betaveros/castlefall">PRs welcome</a>)</div>
 	<div><button id="timer"><span id="progress"></span>Timer: <strong id="time">60</strong></button></div>
 	<div id="msg"></div>
