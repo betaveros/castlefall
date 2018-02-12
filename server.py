@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.3"
+version = "v0.3.1"
 
 wordlist_directory = 'wordlists'
 
@@ -78,6 +78,7 @@ class Room:
         self.last_start = time.time()
         self.players_in_round: List[str] = []
         self.assigned_words: Dict[str, str] = {}
+        self.words: List[str] = []
         self.words_left: Dict[str, List[str]] = collections.defaultdict(list)
 
     def has_player(self, name: str) -> bool:
@@ -171,7 +172,6 @@ class CastlefallFactory(WebSocketServerFactory):
         # room -> (name -> client)
         self.rooms: Dict[str, Room] = collections.defaultdict(Room)
         self.status_for_peer: Dict[str, ClientStatus] = {} # peer -> status
-        self.words = []
 
     def players_in_room(self, room: str) -> List[str]:
         return list(sorted(self.rooms[room].get_player_names()))
@@ -203,7 +203,7 @@ class CastlefallFactory(WebSocketServerFactory):
             'room': room_name,
             'round': room.round,
             'playersinround': room.players_in_round,
-            'words': self.words,
+            'words': room.get_words_shuffled(),
             'word': room.get_assigned_word(name) if name else None,
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,
