@@ -10,8 +10,25 @@
 #icon { vertical-align: middle; }
 body { font-family: sans-serif; margin: 0; padding: 0.5em; }
 #time { font-family: monospace; font-size: 150%; }
-#msg {
+#msgwrap {
 	margin-top: 1em;
+	max-height: 10em;
+	overflow: auto;
+}
+#msg {
+	width: 100%;
+	border-spacing: 0;
+	table-layout: fixed;
+}
+#msg tr.error {
+	background-color: #fee;
+}
+#msg tr td:first-child {
+	width: 9ch;
+	margin-right: 0.2em;
+	font-family: monospace;
+}
+#msg tr.error td + td {
 	font-size: 150%; color: #c00;
 }
 h1 { padding: 0; margin: 0.2em 0 0.5em; }
@@ -37,19 +54,35 @@ tr, td { margin: 0; padding: 0 0.5em 0 0; }
 	border-radius: 1em;
 	margin-bottom: 1em;
 }
-input#wordcount, select#wordlists {
+#chatwrap {
+	display: flex;
+	align-items: center;
+}
+#chatform {
+	display: inline;
+	flex-grow: 1;
+	margin-right: 0.5em;
+}
+input.text, select#wordlists {
 	font-size: 100%;
-	text-align: center;
 	border-radius: 9990px;
 	border: 1px solid #bbd;
 	background-image: linear-gradient(to bottom,#f8f8ff 0,#f0f0f8 100%);
 	box-shadow: inset 0 1px 1px rgba(0,0,0,.3);
 }
-input#wordcount:active, input#wordcount:focus {
-	background-color: #dde;
-	background-image: linear-gradient(to bottom,#dde 0,#eef 100%);
+input#chat {
+	box-sizing: border-box;
+	padding-left: 0.5em;
+	width: 100%;
 }
-input#wordcount[disabled], select#wordlists[disabled], input#wordcount:active[disabled], input#wordcount:focus[disabled] {
+input#wordcount {
+	text-align: center;
+}
+input.text:active, input.text:focus {
+	background-color: #dde;
+	background-image: linear-gradient(to bottom,#e8e8f8 0,#eef 100%);
+}
+input.text[disabled], select#wordlists[disabled], input.text:active[disabled], input.text:focus[disabled] {
 	cursor: not-allowed;
 	background-color: #ccc;
 	background-image: none;
@@ -84,9 +117,6 @@ button {
 	font-size: 50%;
 	padding: 0 3px;
 }
-#timer {
-	width: 100%;
-}
 button:hover {
 	background-position: 0 -15px;
 }
@@ -115,14 +145,19 @@ button#newround {
 	<div id="wrap">
 		<h1><img id="icon" src="castlefall.png">Castlefall</h1>
 	<div>You are <span id="name"></span> in <span id="room"></span><sup><button id="roomhelp">?</button></sup> (client <span id="cliv"></span> / server <span id="serv"></span> / <a href="https://github.com/betaveros/castlefall">PRs welcome</a>)</div>
-	<div><button id="timer"><span id="progress"></span>Timer: <strong id="time">60</strong></button></div>
-	<div id="msg"></div>
+	<div id="msgwrap"><table id="msg"></table></div>
+	<div id="chatwrap">
+	<form id="chatform">
+	<input type="text" id="chat" class="text" placeholder="Chat..." size="40">
+	</form>
+	<button id="broadcast-timer">Broadcast timer</button>
+	</div>
 	<h2>Players</h2>
 	<table id="players"></table><span id="spectators"></span>
 	<div>
 		<button id="newround"><strong>+</strong> New Round</button>
 		with
-		<input type="text" id="wordcount" value="18" size="2">
+		<input type="text" id="wordcount" class="text" value="18" size="2">
 		<label for="wordcount">words from</label>
 		<select id="wordlists"></select>
 	</div>

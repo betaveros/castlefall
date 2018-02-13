@@ -1,6 +1,6 @@
 import { websocketURL } from "./castlefall-config";
 
-const clientVersion = "v0.3.2";
+const clientVersion = "v0.4";
 
 let myName: string|undefined = undefined;
 
@@ -109,40 +109,30 @@ function createRound(round: number, players: string[], words: string[], word: st
 	}
 
 }
-var startMillis: number = new Date().getTime();
-function updateTime() {
-	var left = 60 - (new Date().getTime() - startMillis) / 1000;
-	var time = document.getElementById('time');
-	var timer = document.getElementById('timer');
-	if (left > 0) {
-		document.getElementById('time').textContent = left.toFixed(3);
-		setTimeout(updateTime, 37);
-		const fraction = left / 60;
-		const percent = (100 * fraction) + "%";
-		const hue = fraction * 120;
-		timer.style.backgroundRepeat = 'repeat-y, repeat-x';
-		timer.style.backgroundImage = ('linear-gradient(to right, hsla(' + hue +
-			', 100%, 50%, 0.3) 0, hsla(' + hue +
-			', 100%, 50%, 0.3) ' + percent +
-			', transparent ' + percent +
-			'), linear-gradient(to bottom,#668 0,#224 100%)');
-	} else {
-		document.getElementById('time').textContent = '0';
-		timer.style.backgroundRepeat = '';
-		timer.style.backgroundImage = '';
-	}
-}
 function pad2(i: number): string {
 	return (i < 10 ? "0" : "") + i;
 }
-function displayMessage(msg: string): void {
+function displayMessage(cls: string, msg: string): HTMLElement {
+	const wrap = document.getElementById('msgwrap');
+	const shouldRescroll = (
+		wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 1);
 	const now = new Date();
 	const h = pad2(now.getHours());
 	const m = pad2(now.getMinutes());
 	const s = pad2(now.getSeconds());
-	const div = document.createElement('div');
-	div.textContent = h + ":" + m + ":" + s + ": " + msg;
-	document.getElementById("msg").appendChild(div);
+	const tr = document.createElement('tr');
+	tr.className = cls;
+	const td1 = document.createElement('td');
+	const td2 = document.createElement('td');
+	td1.textContent = h + ":" + m + ":" + s;
+	td2.textContent = msg;
+	tr.appendChild(td1);
+	tr.appendChild(td2);
+	document.getElementById("msg").appendChild(tr);
+	if (shouldRescroll) {
+		wrap.scrollTop = wrap.scrollHeight;
+	}
+	return tr;
 }
 function getName(): string {
 	return prompt('Enter your name');
@@ -171,10 +161,10 @@ window.addEventListener("load", function() {
 		}));
 	};
 	ws.onclose = function (event) {
-		displayMessage("Connection closed: " + JSON.stringify(event));
+		displayMessage('error', "Connection closed: " + JSON.stringify(event));
 	};
 	ws.onerror = function (event) {
-		displayMessage("Connection error: " + JSON.stringify(event));
+		displayMessage('error', "Connection error: " + JSON.stringify(event));
 	};
 	ws.onmessage = function (event) {
 		var data = JSON.parse(event.data);
@@ -194,8 +184,47 @@ window.addEventListener("load", function() {
 		if (data.round) {
 			createRound(data.round, data.playersinround, data.words, data.word);
 		}
-		if (data.msg) {
-			document.getElementById("msg").textContent = data.msg;
+		if (data.error) {
+			displayMessage('error', data.error);
+		}
+		if (data.chat) {
+			displayMessage('chat', data.chat.name + ": " + data.chat.msg);
+		}
+		if (data.timer) {
+			const tmpl = data.timer.name + " started the timer! Time left: ";
+			const timer = displayMessage('timer', tmpl + "60.000");
+			const startMillis: number = new Date().getTime();
+			const update = function () {
+				const left = 60 - (new Date().getTime() - startMillis) / 1000;
+				// const time = document.getElementById('time');
+				if (left > 0) {
+					timer.childNodes[1].textContent = tmpl + left.toFixed(1);
+					setTimeout(update, 37);
+					const fraction = left / 60;
+					const percent = (100 * fraction) + "%";
+					const hue = fraction * 120;
+					timer.style.color = 'white';
+					timer.style.backgroundRepeat = 'repeat-x';
+					timer.style.backgroundImage = ('linear-gradient(to right, hsl(' + hue +
+						', 100%, 20%) 0, hsl(' + hue +
+						', 100%, 20%) ' + percent +
+						', hsl(' + hue +
+						', 40%, 10%) ' + percent +
+						')');
+				} else if (left > -5) {
+					timer.style.color = 'black';
+					timer.children[1].textContent = tmpl + 0;
+					timer.style.backgroundRepeat = 'repeat';
+					timer.style.backgroundImage = '';
+					const opacity = 0.1 * (left + 5);
+					timer.style.backgroundColor = 'hsl(0, 100%, 50%, ' + opacity + ')';
+					setTimeout(update, 123);
+				} else {
+					timer.style.color = 'black';
+					timer.style.backgroundColor = 'transparent';
+				}
+			};
+			update();
 		}
 		if (data.wordlists) {
 			var node = document.getElementById('wordlists');
@@ -211,6 +240,20 @@ window.addEventListener("load", function() {
 		}
 	};
 	if (myName) {
+		document.getElementById('chatform').addEventListener('submit', function(event) {
+			let chatNode = document.getElementById('chat') as HTMLInputElement;
+			ws.send(JSON.stringify({
+				chat: chatNode.value,
+			}));
+			chatNode.value = "";
+			event.preventDefault();
+		});
+		document.getElementById('broadcast-timer').addEventListener('click', function(event) {
+			ws.send(JSON.stringify({
+				broadcastTimer: true,
+			}));
+			event.preventDefault();
+		});
 		document.getElementById('newround').addEventListener('click', function() {
 			let wordlistNode = document.getElementById('wordlists') as HTMLSelectElement;
 			let wordcountNode = document.getElementById('wordcount') as HTMLInputElement;
@@ -227,9 +270,7 @@ window.addEventListener("load", function() {
 		document.getElementById('newround').setAttribute('disabled', 'disabled');
 		document.getElementById('wordlists').setAttribute('disabled', 'disabled');
 		document.getElementById('wordcount').setAttribute('disabled', 'disabled');
+		document.getElementById('chat').setAttribute('disabled', 'disabled');
+		document.getElementById('broadcast-timer').setAttribute('disabled', 'disabled');
 	}
-	document.getElementById('timer').addEventListener('click', function() {
-		startMillis = new Date().getTime();
-		updateTime();
-	});
 });

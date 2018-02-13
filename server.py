@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.3.1"
+version = "v0.4"
 
 wordlist_directory = 'wordlists'
 
@@ -61,6 +61,13 @@ class CastlefallProtocol(WebSocketServerProtocol):
             kick_target = data['kick']
             print('{}: kicking {}'.format(self.peer, kick_target))
             self.factory.kick(self, kick_target)
+        if 'chat' in data:
+            chat_message = data['chat']
+            print('{} says: {}'.format(self.peer, chat_message))
+            self.factory.chat(self, chat_message)
+        if 'broadcastTimer' in data:
+            print('{} starts the timer'.format(self.peer))
+            self.factory.broadcast_timer(self)
 
 def json_to_bytes(obj: dict) -> bytes:
     return codecs.encode(json.dumps(obj), 'utf-8')
@@ -183,7 +190,7 @@ class CastlefallFactory(WebSocketServerFactory):
             if room.has_player(name):
                 old_client = room.get_player_client(name)
                 self.send(old_client, {
-                    'msg': 'Disconnected: your name was taken.',
+                    'error': 'Disconnected: your name was taken.',
                 })
                 del self.status_for_peer[old_client.peer]
                 # del room_dict[name] # will get overwritten
@@ -233,7 +240,7 @@ class CastlefallFactory(WebSocketServerFactory):
         if room.has_player(name):
             client = room.get_player_client(name)
             self.send(client, {
-                'msg': 'Disconnected: you were kicked.',
+                'error': 'Disconnected: you were kicked.',
             })
             room.delete_player_client(name)
             if client.peer in self.status_for_peer:
@@ -241,6 +248,31 @@ class CastlefallFactory(WebSocketServerFactory):
             else:
                 print("name had client, but the peer wasn't there :(")
         self.broadcast(room, {'players': room.get_player_names()})
+
+    def chat(self, client: CastlefallProtocol, chat_message: str):
+        if client.peer in self.status_for_peer:
+            status = self.status_for_peer[client.peer]
+            room = self.rooms[status.room]
+            if status.name:
+                if room.has_player(status.name):
+                    self.broadcast(room, {'chat': {
+                        'name': status.name,
+                        'msg': chat_message,
+                    }})
+                else:
+                    print("client's peer had name, but its name wasn't there :(")
+
+    def broadcast_timer(self, client: CastlefallProtocol):
+        if client.peer in self.status_for_peer:
+            status = self.status_for_peer[client.peer]
+            room = self.rooms[status.room]
+            if status.name:
+                if room.has_player(status.name):
+                    self.broadcast(room, {'timer': {
+                        'name': status.name,
+                    }})
+                else:
+                    print("client's peer had name, but its name wasn't there :(")
 
     def broadcast(self, room: Room, obj: dict) -> None:
         payload = json_to_bytes(obj)
