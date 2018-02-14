@@ -5,7 +5,7 @@ const clientVersion = "v0.4";
 let myName: string|undefined = undefined;
 
 function makeKicker(ws: WebSocket, name: string): Element {
-	var button = document.createElement('button');
+	const button = document.createElement('button');
 	button.textContent = 'kick';
 	button.addEventListener('click', function() {
 		ws.send(JSON.stringify({
@@ -20,14 +20,14 @@ function clear(node: Element): void {
 	}
 }
 function setPlayers(ws: WebSocket, list: string[]): void {
-	var node = document.getElementById('players');
+	const node = document.getElementById('players');
 	clear(node);
-	for (var i0 = 0; i0 < list.length; i0 += 4) {
-		var tr = document.createElement('tr');
-		var iend = Math.min(i0 + 4, list.length);
-		for (var i = i0; i < iend; i++) {
-			var name = list[i];
-			var td = document.createElement('td');
+	for (let i0 = 0; i0 < list.length; i0 += 4) {
+		const tr = document.createElement('tr');
+		const iend = Math.min(i0 + 4, list.length);
+		for (let i = i0; i < iend; i++) {
+			const name = list[i];
+			const td = document.createElement('td');
 			if (myName) {
 				td.appendChild(makeKicker(ws, name));
 			}
@@ -40,7 +40,7 @@ function setPlayers(ws: WebSocket, list: string[]): void {
 function setContents(node: Element, list: string[]): void {
 	clear(node);
 	list.forEach(function (text) {
-		var div = document.createElement('div');
+		const div = document.createElement('div');
 		div.textContent = text;
 		node.appendChild(div);
 	});
@@ -48,34 +48,34 @@ function setContents(node: Element, list: string[]): void {
 function makeContainer(list: string[]): Element {
 	// make a div that contains the words in the list, which will be
 	// CSS-formatted to be in 2 to 4 columns
-	var container = document.createElement('div');
+	const container = document.createElement('div');
 	container.className = 'container';
 	setContents(container, list);
 	return container;
 }
 function makeh3(text: string): Element {
-	var h3 = document.createElement('h3');
+	const h3 = document.createElement('h3');
 	h3.textContent = text;
 	return h3;
 }
-var lastRound: number = 0;
+let lastRound: number = 0;
 function createRound(round: number, players: string[], words: string[], word: string|null) {
 	lastRound = round;
-	var div = document.createElement('div');
+	const div = document.createElement('div');
 	div.className = 'round';
-	var roundh3 = makeh3('Round ' + round);
+	const roundh3 = makeh3('Round ' + round);
 	div.appendChild(roundh3);
 
-	var bodydiv = document.createElement('div');
+	const bodydiv = document.createElement('div');
 	bodydiv.appendChild(makeContainer(players));
 	bodydiv.appendChild(makeh3('Words'));
 	bodydiv.appendChild(makeContainer(words));
-	var worddiv = document.createElement('div');
+	const worddiv = document.createElement('div');
 	worddiv.className = 'container';
 	if (word) {
-		var wordelt = document.createElement('strong');
+		const wordelt = document.createElement('strong');
 		wordelt.textContent = word;
-		var button = document.createElement('button');
+		const button = document.createElement('button');
 		button.textContent = "show/hide";
 		button.addEventListener('click', function () {
 			if (wordelt.textContent === word) {
@@ -101,7 +101,7 @@ function createRound(round: number, players: string[], words: string[], word: st
 		}
 	});
 
-	var rounds = document.getElementById('rounds');
+	const rounds = document.getElementById('rounds');
 	if (rounds.firstChild) {
 		rounds.insertBefore(div, rounds.firstChild);
 	} else {
@@ -167,7 +167,7 @@ window.addEventListener("load", function() {
 		displayMessage('error', "Connection error: " + JSON.stringify(event));
 	};
 	ws.onmessage = function (event) {
-		var data = JSON.parse(event.data);
+		const data = JSON.parse(event.data);
 		if (data.version) {
 			document.getElementById("serv").textContent = data.version;
 		}
@@ -227,12 +227,12 @@ window.addEventListener("load", function() {
 			update();
 		}
 		if (data.wordlists) {
-			var node = document.getElementById('wordlists');
+			const node = document.getElementById('wordlists');
 			while (node.hasChildNodes()) {
 				node.removeChild(node.lastChild);
 			}
 			data.wordlists.forEach(function (wordlist) {
-				var option = document.createElement('option');
+				const option = document.createElement('option');
 				option.value = wordlist[0];
 				option.textContent = wordlist[0] + " (" + wordlist[1] + " words)";
 				node.appendChild(option);
@@ -241,7 +241,7 @@ window.addEventListener("load", function() {
 	};
 	if (myName) {
 		document.getElementById('chatform').addEventListener('submit', function(event) {
-			let chatNode = document.getElementById('chat') as HTMLInputElement;
+			const chatNode = document.getElementById('chat') as HTMLInputElement;
 			ws.send(JSON.stringify({
 				chat: chatNode.value,
 			}));
@@ -255,8 +255,8 @@ window.addEventListener("load", function() {
 			event.preventDefault();
 		});
 		document.getElementById('newround').addEventListener('click', function() {
-			let wordlistNode = document.getElementById('wordlists') as HTMLSelectElement;
-			let wordcountNode = document.getElementById('wordcount') as HTMLInputElement;
+			const wordlistNode = document.getElementById('wordlists') as HTMLSelectElement;
+			const wordcountNode = document.getElementById('wordcount') as HTMLInputElement;
 			const wordlist = wordlistNode.options[wordlistNode.selectedIndex].value;
 			ws.send(JSON.stringify({
 				start: {
