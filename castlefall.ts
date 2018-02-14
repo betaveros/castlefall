@@ -1,6 +1,6 @@
 import { websocketURL } from "./castlefall-config";
 
-const clientVersion = "v0.4";
+const clientVersion = "v0.5";
 
 let myName: string|undefined = undefined;
 
@@ -59,7 +59,7 @@ function makeh3(text: string): Element {
 	return h3;
 }
 let lastRound: number = 0;
-function createRound(round: number, players: string[], words: string[], word: string|null) {
+function createRound(round: number, starter: string, players: string[], words: string[], word: string|null) {
 	lastRound = round;
 	const div = document.createElement('div');
 	div.className = 'round';
@@ -108,6 +108,7 @@ function createRound(round: number, players: string[], words: string[], word: st
 		rounds.appendChild(div);
 	}
 
+	displayMessage('roundstart', starter + " has started Round " + round);
 }
 function pad2(i: number): string {
 	return (i < 10 ? "0" : "") + i;
@@ -182,7 +183,7 @@ window.addEventListener("load", function() {
 			document.getElementById('spectators').textContent = "";
 		}
 		if (data.round) {
-			createRound(data.round, data.playersinround, data.words, data.word);
+			createRound(data.round, data.starter, data.playersinround, data.words, data.word);
 		}
 		if (data.error) {
 			displayMessage('error', data.error);

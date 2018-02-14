@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.4"
+version = "v0.5"
 
 wordlist_directory = 'wordlists'
 
@@ -82,6 +82,7 @@ class Room:
         self.d: Dict[str, CastlefallProtocol] = {}
         self.spectators: Dict[str, CastlefallProtocol] = {}
         self.round = 0
+        self.round_starter = ""
         self.last_start = time.time()
         self.players_in_round: List[str] = []
         self.assigned_words: Dict[str, str] = {}
@@ -140,14 +141,13 @@ class Room:
         self.words_left[key] = left[num:]
         return left[:num]
 
-    def start_round(self, val: dict) -> bool:
+    def start_round(self, starter: str, val: dict) -> None:
         if self.round != val.get('round'):
-            print('Start fail: round out of sync')
-            return False
+            raise Exception('Start fail: round out of sync')
         if time.time() < self.last_start + 2:
-            print('Start fail: too soon')
-            return False
+            raise Exception('Start fail: too soon')
         self.round += 1
+        self.round_starter = starter
         self.last_start = time.time()
         try:
             wordcount = int(val.get('wordcount', 18))
@@ -166,7 +166,6 @@ class Room:
         for i, (name, client) in enumerate(named_clients):
             word = word2 if i >= half else word1
             self.set_assigned_word(name, word)
-        return True
 
     def get_words_shuffled(self) -> List[str]:
         copy = list(self.words)
@@ -209,6 +208,7 @@ class CastlefallFactory(WebSocketServerFactory):
             'spectators': room.get_num_spectators(),
             'room': room_name,
             'round': room.round,
+            'starter': room.round_starter,
             'playersinround': room.players_in_round,
             'words': room.get_words_shuffled(),
             'word': room.get_assigned_word(name) if name else None,
@@ -235,7 +235,7 @@ class CastlefallFactory(WebSocketServerFactory):
             })
 
     def kick(self, client: CastlefallProtocol, name: str):
-        room = self.room_playing_in(client)
+        _, room = self.name_and_room_playing_in(client)
         if not room: return
         if room.has_player(name):
             client = room.get_player_client(name)
@@ -250,29 +250,21 @@ class CastlefallFactory(WebSocketServerFactory):
         self.broadcast(room, {'players': room.get_player_names()})
 
     def chat(self, client: CastlefallProtocol, chat_message: str):
-        if client.peer in self.status_for_peer:
-            status = self.status_for_peer[client.peer]
-            room = self.rooms[status.room]
-            if status.name:
-                if room.has_player(status.name):
-                    self.broadcast(room, {'chat': {
-                        'name': status.name,
-                        'msg': chat_message,
-                    }})
-                else:
-                    print("client's peer had name, but its name wasn't there :(")
+        name, room = self.name_and_room_playing_in(client)
+        if room:
+            self.broadcast(room, {'chat': {
+                'name': name,
+                'msg': chat_message,
+            }})
+        else:
+            print("client's peer had name, but its name wasn't there :(")
 
     def broadcast_timer(self, client: CastlefallProtocol):
-        if client.peer in self.status_for_peer:
-            status = self.status_for_peer[client.peer]
-            room = self.rooms[status.room]
-            if status.name:
-                if room.has_player(status.name):
-                    self.broadcast(room, {'timer': {
-                        'name': status.name,
-                    }})
-                else:
-                    print("client's peer had name, but its name wasn't there :(")
+        name, room = self.name_and_room_playing_in(client)
+        if room:
+            self.broadcast(room, {'timer': {
+                'name': name,
+            }})
 
     def broadcast(self, room: Room, obj: dict) -> None:
         payload = json_to_bytes(obj)
@@ -282,27 +274,40 @@ class CastlefallFactory(WebSocketServerFactory):
     def send(self, client: CastlefallProtocol, obj: dict) -> None:
         client.sendMessage(json_to_bytes(obj))
 
-    def room_playing_in(self, client: CastlefallProtocol) -> Optional[Room]:
-        """The room the client is playing in.
+    def name_and_room_playing_in(self, client: CastlefallProtocol) -> Optional[Room]:
+        """The name and room the client is playing in.
 
         If the client is not playing in a room, including if the client is
-        spectating, return None."""
+        spectating, return None, None."""
         if client.peer in self.status_for_peer:
             status = self.status_for_peer[client.peer]
-            if status.name:
-                return self.rooms[status.room]
+            name = status.name
+            room = self.rooms[status.room]
+            if name:
+                if room.has_player(name):
+                    return name, room
+                else:
+                    print("client's peer had name, but its name wasn't there :(")
+            # else, is spectating
         return None
 
-    def start_round(self, client: CastlefallProtocol, val: dict) -> None:
-        room = self.room_playing_in(client)
-        if room and room.start_round(val):
-            for name, client in room.get_named_all_clients():
-                client.sendMessage(json_to_bytes({
-                    'round': room.round,
-                    'playersinround': room.players_in_round,
-                    'words': room.get_words_shuffled(),
-                    'word': room.get_assigned_word(name) if name else None,
-                }))
+    def start_round(self, orig_client: CastlefallProtocol, val: dict) -> None:
+        client_name, room = self.name_and_room_playing_in(orig_client)
+        if room:
+            try:
+                room.start_round(client_name, val)
+                for name, client in room.get_named_all_clients():
+                    self.send(client, {
+                        'round': room.round,
+                        'starter': room.round_starter,
+                        'playersinround': room.players_in_round,
+                        'words': room.get_words_shuffled(),
+                        'word': room.get_assigned_word(name) if name else None,
+                    })
+            except Exception as e:
+                self.send(orig_client, {
+                    'error': str(e),
+                })
 
 if __name__ == "__main__":
     log.startLogging(sys.stdout)
