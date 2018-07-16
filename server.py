@@ -274,7 +274,7 @@ class CastlefallFactory(WebSocketServerFactory):
     def send(self, client: CastlefallProtocol, obj: dict) -> None:
         client.sendMessage(json_to_bytes(obj))
 
-    def name_and_room_playing_in(self, client: CastlefallProtocol) -> Optional[Room]:
+    def name_and_room_playing_in(self, client: CastlefallProtocol) -> Tuple[Optional[str], Optional[Room]]:
         """The name and room the client is playing in.
 
         If the client is not playing in a room, including if the client is
@@ -289,11 +289,11 @@ class CastlefallFactory(WebSocketServerFactory):
                 else:
                     print("client's peer had name, but its name wasn't there :(")
             # else, is spectating
-        return None
+        return None, None
 
     def start_round(self, orig_client: CastlefallProtocol, val: dict) -> None:
         client_name, room = self.name_and_room_playing_in(orig_client)
-        if room:
+        if client_name and room:
             try:
                 room.start_round(client_name, val)
                 for name, client in room.get_named_all_clients():
