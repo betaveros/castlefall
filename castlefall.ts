@@ -1,6 +1,6 @@
 import { websocketURL } from "./castlefall-config";
 
-const clientVersion = "v0.5";
+const clientVersion = "v0.6";
 
 let myName: string|undefined = undefined;
 
@@ -19,19 +19,24 @@ function clear(node: Element): void {
 		node.removeChild(node.lastChild);
 	}
 }
-function setPlayers(ws: WebSocket, list: string[]): void {
+type PlayerStatus = "active" | "disconnected";
+interface Player {
+	name: string;
+	status: PlayerStatus;
+}
+function setPlayers(ws: WebSocket, list: Player[]): void {
 	const node = document.getElementById('players');
 	clear(node);
 	for (let i0 = 0; i0 < list.length; i0 += 4) {
 		const tr = document.createElement('tr');
 		const iend = Math.min(i0 + 4, list.length);
 		for (let i = i0; i < iend; i++) {
-			const name = list[i];
+			const { name, status } = list[i];
 			const td = document.createElement('td');
 			if (myName) {
 				td.appendChild(makeKicker(ws, name));
 			}
-			td.appendChild(document.createTextNode(name));
+			td.appendChild(document.createTextNode(name + (status === "disconnected" ? " (disconnected)" : "")));
 			tr.appendChild(td);
 		}
 		node.appendChild(tr);
@@ -59,7 +64,7 @@ function makeh3(text: string): Element {
 	return h3;
 }
 let lastRound: number = 0;
-function createRound(round: number, starter: string, players: string[], words: string[], word: string|null) {
+function createRound(round: number, starter: string, players: Player[], words: string[], word: string|null) {
 	lastRound = round;
 	const div = document.createElement('div');
 	div.className = 'round';
@@ -67,7 +72,7 @@ function createRound(round: number, starter: string, players: string[], words: s
 	div.appendChild(roundh3);
 
 	const bodydiv = document.createElement('div');
-	bodydiv.appendChild(makeContainer(players));
+	bodydiv.appendChild(makeContainer(players.map(player => player.name)));
 	bodydiv.appendChild(makeh3('Words'));
 	bodydiv.appendChild(makeContainer(words));
 	const worddiv = document.createElement('div');
