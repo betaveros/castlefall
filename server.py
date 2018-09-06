@@ -79,8 +79,10 @@ class ClientStatus:
 
 class Room:
     def __init__(self) -> None:
-        self.d: Dict[str, CastlefallProtocol] = {}
-        self.spectators: Dict[str, CastlefallProtocol] = {}
+        # None = disconnected player
+        self.d: Dict[str, Optional[CastlefallProtocol]] = {}
+
+        self.spectators: Dict[str, CastlefallProtocol] = {} # peer -> protocol
         self.round = 0
         self.round_starter = ""
         self.last_start = time.time()
@@ -96,16 +98,16 @@ class Room:
         return list(sorted(self.d.keys()))
 
     def get_player_data(self) -> List[dict]:
-        return [{ 'name': name, 'status': 'active' } for name in sorted(self.d.keys())]
+        return [{ 'name': name, 'status': 'active' if connection else 'disconnected' } for name, connection in sorted(self.d.items())]
 
-    def get_player_client(self, name: str) -> CastlefallProtocol:
-        return self.d[name]
+    def get_player_client(self, name: str) -> Optional[CastlefallProtocol]:
+        return self.d.get(name)
 
     def set_player_client(self, name: str, p: CastlefallProtocol) -> None:
         self.d[name] = p
 
     def get_clients(self) -> Iterable[CastlefallProtocol]:
-        return itertools.chain(self.d.values(), self.spectators.values())
+        return itertools.chain(filter(lambda c: isinstance(c, CastlefallProtocol), self.d.values()), self.spectators.values())
 
     def add_spectator(self, client: CastlefallProtocol) -> None:
         self.spectators[client.peer] = client
@@ -117,11 +119,14 @@ class Room:
         if client.peer in self.spectators:
             del self.spectators[client.peer]
 
-    def get_named_player_clients(self) -> Iterable[Tuple[str, CastlefallProtocol]]:
+    def get_player_pairs(self) -> Iterable[Tuple[str, Optional[CastlefallProtocol]]]:
         return self.d.items()
 
     def get_named_all_clients(self) -> Iterable[Tuple[Optional[str], CastlefallProtocol]]:
-        return itertools.chain(self.d.items(), zip(itertools.repeat(None), self.spectators.values()))
+        return itertools.chain(filter(lambda name_conn: name_conn[1], self.d.items()), zip(itertools.repeat(None), self.spectators.values()))
+
+    def disconnect_player_client(self, name: str) -> None:
+        self.d[name] = None
 
     def delete_player_client(self, name: str) -> None:
         del self.d[name]
@@ -158,7 +163,7 @@ class Room:
             wordcount = 18
 
         words = self.select_words(val['wordlist'], wordcount)
-        named_clients = list(self.get_named_player_clients())
+        named_clients = list(self.get_player_pairs())
         random.shuffle(named_clients)
         half = len(named_clients) // 2
         word1, word2 = random.sample(words, 2)
@@ -166,7 +171,7 @@ class Room:
         self.clear_assigned_words()
         self.words = words
         print(', '.join(words))
-        for i, (name, client) in enumerate(named_clients):
+        for i, (name, _) in enumerate(named_clients):
             word = word2 if i >= half else word1
             self.set_assigned_word(name, word)
 
@@ -188,11 +193,13 @@ class CastlefallFactory(WebSocketServerFactory):
         if name:
             if room.has_player(name):
                 old_client = room.get_player_client(name)
-                self.send(old_client, {
-                    'error': 'Disconnected: your name was taken.',
-                })
-                del self.status_for_peer[old_client.peer]
-                # del room_dict[name] # will get overwritten
+                if old_client:
+                    self.send(old_client, {
+                        'error': 'Disconnected: your name was taken.',
+                    })
+                    del self.status_for_peer[old_client.peer]
+                    # del room_dict[name] # will get overwritten
+                # if not, the client was disconnected
 
             room.set_player_client(name, client)
             self.status_for_peer[client.peer] = ClientStatus(room_name, name)
@@ -223,7 +230,7 @@ class CastlefallFactory(WebSocketServerFactory):
             room = self.rooms[status.room]
             if status.name:
                 if room.has_player(status.name):
-                    room.delete_player_client(status.name)
+                    room.disconnect_player_client(status.name)
                 else:
                     print("client's peer had name, but its name wasn't there :(")
             else:
