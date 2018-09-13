@@ -136,7 +136,6 @@ class DateTd extends PureComponent<{ date: Date }> {
   }
 }
 
-// const startMillis: number = new Date().getTime();
 type TimerProps = {
   template: string;
   date: Date;
@@ -319,9 +318,13 @@ type NewRoundFormProps = {
   ws: WebSocket | undefined;
 };
 
+type NewRoundFormState = {
+  wordlist: string;
+  wordcount: string;
+};
+
 class NewRoundForm extends React.Component<
-  NewRoundFormProps,
-  { wordlist: string; wordcount: string }
+  NewRoundFormProps, NewRoundFormState
 > {
   constructor(props: NewRoundFormProps) {
     super(props);
@@ -489,7 +492,6 @@ class CastlefallApp extends Component<{}, CastlefallState> {
   }
 
   componentDidMount() {
-    // document.getElementById('cliv').textContent = clientVersion;
     const room = window.location.hash || "#lobby";
     const myName = prompt("Enter your name") || undefined;
     this.setState({ room, myName });
@@ -518,16 +520,10 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       }
       if (data.players) {
         this.setState({ players: data.players });
-        // setPlayers(ws, data.players);
       }
       if (data.spectators) {
         this.setState({ spectators: data.spectators });
-        // let str = data.spectators + " spectator";
-        // if (data.spectators > 1) { str += "s"; }
-        // document.getElementById('spectators').textContent = str;
-      } // else if (data.spectators === 0) {
-      // document.getElementById('spectators').textContent = "";
-      // }
+      }
       if (data.round) {
         const roundNumber = data.round;
 
@@ -562,17 +558,6 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         this.setState({ wordlists: data.wordlists });
       }
     };
-    /*
-	if (myName) {
-	} else {
-		document.getElementById('newround').setAttribute('disabled', 'disabled');
-		document.getElementById('wordlists').setAttribute('disabled', 'disabled');
-		document.getElementById('wordcount').setAttribute('disabled', 'disabled');
-		document.getElementById('chat').setAttribute('disabled', 'disabled');
-		document.getElementById('broadcast-timer').setAttribute('disabled', 'disabled');
-	}
-});
-*/
   }
 
   handleBroadcastTimer = (event: React.MouseEvent<HTMLButtonElement>) => {
