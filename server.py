@@ -252,14 +252,16 @@ class CastlefallFactory(WebSocketServerFactory):
         if not room: return
         if room.has_player(name):
             client = room.get_player_client(name)
-            self.send(client, {
-                'error': 'Disconnected: you were kicked.',
-            })
+            if client:
+                self.send(client, {
+                    'error': 'Disconnected: you were kicked.',
+                })
             room.delete_player_client(name)
-            if client.peer in self.status_for_peer:
-                del self.status_for_peer[client.peer]
-            else:
-                print("name had client, but the peer wasn't there :(")
+            if client:
+                if client.peer in self.status_for_peer:
+                    del self.status_for_peer[client.peer]
+                else:
+                    print("name had client, but the peer wasn't there :(")
         self.broadcast(room, {'players': room.get_player_data()})
 
     def chat(self, client: CastlefallProtocol, chat_message: str):
