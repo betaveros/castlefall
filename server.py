@@ -141,11 +141,30 @@ class Room:
         self.words_left[key] = left[num:]
         return left[:num]
 
+    def send_spoilers(self) -> None:
+        players = self.players_in_round
+        words = {}
+        for p in players:
+            w = self.get_assigned_word(p)
+            if w in words:
+                words[w].append(p)
+            else:
+                words[w] = [p]
+
+        message = ""
+        for w,ps in words.items():
+            self.factory.broadcast(self, {'chat': {
+                    'name': w,
+                    'msg': ", ".join(ps),
+                }})
+
     def start_round(self, starter: str, val: dict) -> None:
         if self.round != val.get('round'):
             raise Exception('Start fail: round out of sync')
         if time.time() < self.last_start + 2:
             raise Exception('Start fail: too soon')
+
+        self.send_spoilers()
         self.round += 1
         self.round_starter = starter
         self.last_start = time.time()
