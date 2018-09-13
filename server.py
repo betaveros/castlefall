@@ -157,12 +157,18 @@ class Room:
         self.round += 1
         self.round_starter = starter
         self.last_start = time.time()
+
         try:
             wordcount = int(val.get('wordcount', 18))
         except ValueError as e:
             wordcount = 18
 
-        words = self.select_words(val['wordlist'], wordcount)
+        try:
+            wordlist_name = val['wordlist']
+            words = self.select_words(wordlist_name, wordcount)
+        except KeyError:
+            raise Exception('Start fail: could not select words from wordlist')
+
         named_clients = list(self.get_player_pairs())
         random.shuffle(named_clients)
         half = len(named_clients) // 2

@@ -1,0 +1,32 @@
+{
+  "name": "castlefall-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for bpchen's castlefall came",
+  "main": "index.js",
+  "author": "betaveros",
+  "license": "MIT",
+  "dependencies": {
+    "@types/react": "^16.4.13",
+    "@types/react-dom": "^16.0.7",
+    "react": "^16.4.2",
+    "react-dom": "^16.4.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/plugin-proposal-class-properties": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/preset-typescript": "^7.0.0",
+    "babel-loader": "^8.0.2",
+    "path": "^0.12.7",
+    "prettier": "^1.14.2",
+    "typescript": "^3.0.3",
+    "webpack": "^4.17.2",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.7"
+  },
+  "scripts": {
+    "dev": "webpack-dev-server",
+    "typecheck": "tsc --noEmit --jsx react"
+  }
+}

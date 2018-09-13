@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Webpack Sample Project</title>
+		<style>
+#wrap { max-width: 42em; margin: 0 auto; }
+#icon { vertical-align: middle; }
+body { font-family: sans-serif; margin: 0; padding: 0.5em; }
+#time { font-family: monospace; font-size: 150%; }
+#msgwrap {
+	margin-top: 1em;
+	max-height: 10em;
+	overflow: auto;
+}
+#msg {
+	width: 100%;
+	border-spacing: 0;
+	table-layout: fixed;
+}
+#msg tr.roundstart {
+	font-weight: bold;
+}
+#msg tr.roundstart td + td {
+	font-size: 120%;
+}
+#msg tr.error {
+	background-color: #fee;
+}
+#msg tr td:first-child {
+	width: 9ch;
+	margin-right: 0.2em;
+	font-family: monospace;
+}
+#msg tr.error td + td {
+	font-size: 150%; color: #c00;
+}
+h1 { padding: 0; margin: 0.2em 0 0.5em; }
+h3 { margin: 0 0 0.5em 0; border-bottom: 1px solid black; padding: 0.5em 0.5em 0; }
+tr, td { margin: 0; padding: 0 0.5em 0 0; }
+.container {
+	padding: 0.5em;
+}
+.container div {
+	display: inline-block;
+	min-width: 8.5em;
+	padding: 0 1em 0.5em 0;
+	float: left;
+}
+.container::after {
+	display: block;
+	content: " ";
+	clear: both;
+}
+#worddiv { padding: 2em; }
+.round {
+	border: 1px solid #666;
+	border-radius: 1em;
+	margin-bottom: 1em;
+}
+#chatwrap {
+	display: flex;
+	align-items: center;
+}
+#chatform {
+	display: inline;
+	flex-grow: 1;
+	margin-right: 0.5em;
+}
+input.text, select#wordlists {
+	font-size: 100%;
+	border-radius: 9990px;
+	border: 1px solid #bbd;
+	background-image: linear-gradient(to bottom,#f8f8ff 0,#f0f0f8 100%);
+	box-shadow: inset 0 1px 1px rgba(0,0,0,.3);
+}
+input#chat {
+	box-sizing: border-box;
+	padding-left: 0.5em;
+	width: 100%;
+}
+input#wordcount {
+	text-align: center;
+}
+input.text:active, input.text:focus {
+	background-color: #dde;
+	background-image: linear-gradient(to bottom,#e8e8f8 0,#eef 100%);
+}
+input.text[disabled], select#wordlists[disabled], input.text:active[disabled], input.text:focus[disabled] {
+	cursor: not-allowed;
+	background-color: #ccc;
+	background-image: none;
+	box-shadow: none;
+}
+select#wordlists {
+	padding: 0 0.5em;
+	appearance: none;
+	-moz-appearance: none;
+	-webkit-appearance: none;
+}
+button {
+	display: inline-block;
+	padding: 6px 12px;
+	font-weight: 400;
+	line-height: 1.42857143;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	cursor: pointer;
+	border: 1px solid #224;
+	border-radius: 9999px;
+	color: #fff;
+	background-color: #224;
+	background-image: linear-gradient(to bottom,#668 0,#224 100%);
+	background-repeat: repeat-x;
+	text-shadow: 0 -1px 0 rgba(0,0,0,.2);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
+	margin-right: 0.5em;
+}
+.room-help {
+	font-size: 50%;
+	padding: 0 3px;
+}
+button:hover {
+	background-position: 0 -15px;
+}
+button:active {
+	background-color: #224;
+	background-image: none;
+	box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+}
+button:hover:active {
+	background-color: #113;
+	border-color: #113;
+}
+button[disabled], button[disabled]:hover, button[disabled]:active, button[disabled]:hover:active {
+	cursor: not-allowed;
+	background-image: none;
+	background-color: #999;
+	border-color: #999;
+}
+button#newround {
+	font-size: 18px;
+}
+		</style>
+	</head>
+	<body>
+		<div id="wrap">
+			<h1><img id="icon" src="castlefall.png" alt="Castlefall logo"/>Castlefall</h1>
+			<div id="root"></div>
+		</div>
+		<script src="bundle.js"></script>
+	</body>
+</html>
