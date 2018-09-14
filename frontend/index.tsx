@@ -550,7 +550,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       const data = JSON.parse(event.data);
       console.log(data);
       if (data.version) {
-        this.setState({ serverVersion: data.serverVersion });
+        this.setState({ serverVersion: data.version });
       }
       if (data.players) {
         this.setState({ players: data.players });
