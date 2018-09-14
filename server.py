@@ -68,6 +68,10 @@ class CastlefallProtocol(WebSocketServerProtocol):
         if 'broadcastTimer' in data:
             print('{} starts the timer'.format(self.peer))
             self.factory.broadcast_timer(self)
+        if 'autokick' in data:
+            autokick = data['autokick']
+            print('autokick set to', autokick)
+            self.factory.set_autokick_and_broadcast(self, autokick)
 
 def json_to_bytes(obj: dict) -> bytes:
     return codecs.encode(json.dumps(obj), 'utf-8')
@@ -90,6 +94,7 @@ class Room:
         self.assigned_words: Dict[str, str] = {}
         self.words: List[str] = []
         self.words_left: Dict[str, List[str]] = collections.defaultdict(list)
+        self.autokick: bool = True
 
     def has_player(self, name: str) -> bool:
         return name in self.d
@@ -173,7 +178,7 @@ class Room:
         random.shuffle(named_clients)
         half = len(named_clients) // 2
         word1, word2 = random.sample(words, 2)
-        self.players_in_round = self.get_player_data()
+        self.players_in_round = self.get_player_names()
         self.clear_assigned_words()
         self.words = words
         print(', '.join(words))
@@ -227,6 +232,7 @@ class CastlefallFactory(WebSocketServerFactory):
             'word': room.get_assigned_word(name) if name else None,
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,
+            'autokick': { 'value': room.autokick },
         })
 
     def unregister(self, client: CastlefallProtocol) -> None:
@@ -236,7 +242,10 @@ class CastlefallFactory(WebSocketServerFactory):
             room = self.rooms[status.room]
             if status.name:
                 if room.has_player(status.name):
-                    room.disconnect_player_client(status.name)
+                    if room.autokick:
+                        room.delete_player_client(status.name)
+                    else:
+                        room.disconnect_player_client(status.name)
                 else:
                     print("client's peer had name, but its name wasn't there :(")
             else:
@@ -279,6 +288,15 @@ class CastlefallFactory(WebSocketServerFactory):
         if room:
             self.broadcast(room, {'timer': {
                 'name': name,
+            }})
+
+    def set_autokick_and_broadcast(self, client: CastlefallProtocol, autokick: bool):
+        name, room = self.name_and_room_playing_in(client)
+        if room:
+            room.autokick = bool(autokick)
+            self.broadcast(room, {'autokick': {
+                'name': name,
+                'value': room.autokick,
             }})
 
     def broadcast(self, room: Room, obj: dict) -> None:

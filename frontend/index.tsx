@@ -216,7 +216,7 @@ class TimerRow extends Component<TimerProps, { currentDate: Date }> {
   }
 }
 
-type MessageType = "roundstart" | "error" | "chat" | "timer";
+type MessageType = "roundstart" | "error" | "chat" | "timer" | "setting";
 
 type Message = {
   type: MessageType;
@@ -418,11 +418,12 @@ type CastlefallState = {
   wordlists: WordlistInfo[];
   messages: Message[];
   rounds: Round[];
+	autokick: boolean;
 };
 
 class CastlefallApp extends Component<{}, CastlefallState> {
   ws: WebSocket | undefined;
-  msgWrapRef: React.Ref<HTMLDivElement>;
+  msgWrapRef: any; // React.Ref<HTMLDivElement>;
 
   constructor(props: {}) {
     super(props);
@@ -435,7 +436,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       lastRound: 0,
       wordlists: [],
       messages: [],
-      rounds: []
+      rounds: [],
+      autokick: true,
     };
 
     this.ws = undefined;
@@ -557,6 +559,15 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       if (data.wordlists) {
         this.setState({ wordlists: data.wordlists });
       }
+      if (data.autokick) {
+        const { name, value } = data.autokick;
+		  if (name) {
+			this.addMessage("setting", `${name} has ${value ? "enabled" : "disabled"} autokicking disconnected players`);
+		  } else {
+			this.addMessage("setting", `Autokicking disconnected players is ${value ? "enabled" : "disabled"}`);
+		  }
+		this.setState({ autokick: data.autokick.value });
+      }
     };
   }
 
@@ -587,6 +598,17 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     }
   }
 
+  handleChangeAutokick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (this.ws) {
+        console.log(event);
+      this.ws.send(
+        JSON.stringify({
+          autokick: event.target.checked
+        })
+      );
+    }
+  }
+
   render() {
     const {
       myName,
@@ -595,7 +617,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       messages,
       rounds,
       lastRound,
-      wordlists
+      wordlists,
+		autokick,
     } = this.state;
 
     return (
@@ -613,6 +636,9 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             Castlefall rules
           </a>
         </div>
+        <form>
+            <input type="checkbox" checked={autokick} onChange={this.handleChangeAutokick} id="autokick" disabled={!myName} /><label htmlFor="autokick"> autokick?</label>
+        </form>
         <div id="msgwrap" ref={this.msgWrapRef}>
           <MessageTable messages={messages} />
         </div>
