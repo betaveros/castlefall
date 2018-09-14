@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.6.1"
+version = "v0.6.2"
 
 wordlist_directory = 'wordlists'
 
