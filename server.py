@@ -225,11 +225,13 @@ class CastlefallFactory(WebSocketServerFactory):
             'players': room.get_player_data(),
             'spectators': room.get_num_spectators(),
             'room': room_name,
-            'round': room.round,
-            'starter': room.round_starter,
-            'playersinround': room.players_in_round,
-            'words': room.get_words_shuffled(),
-            'word': room.get_assigned_word(name) if name else None,
+            'round': {
+                'number': room.round,
+                'starter': room.round_starter,
+                'players': [{'name': player} for player in room.players_in_round],
+                'words': room.get_words_shuffled(),
+                'word': room.get_assigned_word(name) if name else None,
+            },
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,
             'autokick': { 'value': room.autokick },
@@ -328,14 +330,23 @@ class CastlefallFactory(WebSocketServerFactory):
         client_name, room = self.name_and_room_playing_in(orig_client)
         if client_name and room:
             try:
+                for name, client in room.get_named_all_clients():
+                    self.send(client, {
+                        'spoiler': {
+                            'number': room.round,
+                            'players': [{'name': player, 'word': room.get_assigned_word(player)} for player in room.players_in_round],
+                        }
+                    })
                 room.start_round(client_name, val)
                 for name, client in room.get_named_all_clients():
                     self.send(client, {
-                        'round': room.round,
-                        'starter': room.round_starter,
-                        'playersinround': room.players_in_round,
-                        'words': room.get_words_shuffled(),
-                        'word': room.get_assigned_word(name) if name else None,
+                        'round': {
+                            'number': room.round,
+                            'starter': room.round_starter,
+                            'players': [{'name': player} for player in room.players_in_round],
+                            'words': room.get_words_shuffled(),
+                            'word': room.get_assigned_word(name) if name else None,
+                        }
                     })
             except Exception as e:
                 self.send(orig_client, {

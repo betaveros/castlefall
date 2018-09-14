@@ -44,7 +44,7 @@ const PlayerTable = ({
         {playerRows.map((row, i) => (
           <tr key={i}>
             {row.map(({ name, status }) => (
-              <td key={name}>
+              <td key={name} className={status}>
                 {canKick && !!ws && <Kicker ws={ws} name={name} />}
                 {name}
                 {status === "disconnected" && " (disconnected)"}
@@ -57,25 +57,34 @@ const PlayerTable = ({
   );
 };
 
-const ColumnContainer = ({ list }: { list: string[] }) => {
+const ColumnContainer = ({ list }: { list: React.ReactNode[] }) => {
   return (
     <div className="container">
-      {list.map((str, i) => (
-        <div key={i}>{str}</div>
+      {list.map((node, i) => (
+        <div key={i}>{node}</div>
       ))}
     </div>
   );
 };
 
+type RoundPlayer = {
+  name: string;
+  word: string | undefined;
+};
 type Round = {
   roundNumber: number;
-  players: string[];
+  players: RoundPlayer[];
   words: string[];
   word: string | undefined;
 };
 
-class RoundComponent extends Component<{ round: Round }, { shown: boolean }> {
-  constructor(props: { round: Round }) {
+type RoundComponentProps = {
+  round: Round;
+  myName: string|undefined;
+};
+
+class RoundComponent extends Component<RoundComponentProps, { shown: boolean }> {
+  constructor(props: RoundComponentProps) {
     super(props);
     this.state = { shown: true };
   }
@@ -104,12 +113,18 @@ class RoundComponent extends Component<{ round: Round }, { shown: boolean }> {
   };
 
   render() {
-    const { roundNumber, players, words } = this.props.round;
+    const { round: { roundNumber, players, words, word: roundWord }, myName } = this.props;
 
     return (
       <div className="round">
         <h3>Round {roundNumber}</h3>
-        <ColumnContainer list={players} />
+        <ColumnContainer list={players.map(({ name, word }) => {
+			if (word) {
+				return <div className={word === roundWord ? "same" : undefined}>{name}: {word}</div>;
+			} else {
+				return <div className={name === myName ? "same" : undefined}>{name}</div>;
+			}
+		})} />
         <h3>Words</h3>
         <ColumnContainer list={words} />
         {this.renderWordDiv()}
@@ -418,7 +433,7 @@ type CastlefallState = {
   wordlists: WordlistInfo[];
   messages: Message[];
   rounds: Round[];
-	autokick: boolean;
+  autokick: boolean;
 };
 
 class CastlefallApp extends Component<{}, CastlefallState> {
@@ -527,17 +542,17 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         this.setState({ spectators: data.spectators });
       }
       if (data.round) {
-        const roundNumber = data.round;
+        const { number: roundNumber, starter, players, words, word } = data.round;
 
         const round: Round = {
           roundNumber,
-          players: data.playersinround,
-          words: data.words,
-          word: data.word
+          players,
+          words,
+          word,
         };
         this.addMessage(
           "roundstart",
-          `${data.starter} has started Round ${roundNumber}`
+          `${starter} has started Round ${roundNumber}`
         );
 
         this.setState((state: CastlefallState) => ({
@@ -567,6 +582,22 @@ class CastlefallApp extends Component<{}, CastlefallState> {
 			this.addMessage("setting", `Autokicking disconnected players is ${value ? "enabled" : "disabled"}`);
 		  }
 		this.setState({ autokick: data.autokick.value });
+      }
+      if (data.spoiler) {
+        const { number: roundNumber, players } = data.spoiler;
+
+        this.setState((state: CastlefallState) => ({
+          rounds: state.rounds.map((round) => {
+			  if (round.roundNumber === roundNumber) {
+				  return {
+					  ...round,
+					  players,
+				  };
+			  } else {
+				  return round;
+			  }
+		  }),
+        }));
       }
     };
   }
@@ -664,7 +695,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         <h2>Rounds</h2>
         <div id="rounds">
           {rounds.map(round => (
-            <RoundComponent round={round} key={round.roundNumber} />
+            <RoundComponent round={round} key={round.roundNumber} myName={myName} />
           ))}
         </div>
       </div>
