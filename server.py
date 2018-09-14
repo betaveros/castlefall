@@ -330,16 +330,17 @@ class CastlefallFactory(WebSocketServerFactory):
         client_name, room = self.name_and_room_playing_in(orig_client)
         if client_name and room:
             try:
-                for name, client in room.get_named_all_clients():
-                    self.send(client, {
-                        'spoiler': {
-                            'number': room.round,
-                            'players': [{'name': player, 'word': room.get_assigned_word(player)} for player in room.players_in_round],
-                        }
-                    })
+                spoiler = {
+                    'number': room.round,
+                    'players': [{'name': player, 'word': room.get_assigned_word(player)} for player in room.players_in_round],
+                }
+                # don't send spoiler immediately because if start_round raises,
+                # we don't want to spoil
+
                 room.start_round(client_name, val)
                 for name, client in room.get_named_all_clients():
                     self.send(client, {
+                        'spoiler': spoiler,
                         'round': {
                             'number': room.round,
                             'starter': room.round_starter,
