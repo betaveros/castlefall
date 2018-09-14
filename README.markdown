@@ -21,6 +21,10 @@ The usual strategy is to give clues about your word that are recognizable to peo
 Setup/Development
 ===========
 
-This is pretty hacky. The client-side code is TypeScript, so you should transpile it with TypeScript and then run it through Browserify and UglifyJS. Right now I just have a simple build script; I haven't gotten to setting up a Node.js task running manager thing yet. The server is Python; you'll need Twisted and Autobahn. Set up the Python websockets server running somewhere (run with `prod` as an argument to actually serve to the world), transpile the JS with the config file pointed to the server, and serve the HTML and transpiled JS page.
+The server is just Python 3, with Twisted and Autobahn.
+
+The frontend is in the `frontend` directory, and is Yarn + React + TypeScript + Webpack. In theory if you run `yarn install` or something you'll be able to install everything and get things working. `yarn run webpack-dev-server` gives you a dev server that will automatically refresh when you change the JavaScript, which is pretty nice.
+
+I need to set up a config file, but for now, set up the Python websockets server running somewhere (run with `prod` as an argument to actually serve to the world), transpile the JS with `websocketURL` pointed to the server, and serve the HTML and transpiled JS page.
 
 Wordlists, simple newline-separated text files, go in the `wordlists/` directory; as an example I've put [EFF's short diceware wordlist](https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases) ([CC-BY 3.0](http://creativecommons.org/licenses/by/3.0/us/)) there. There are more suitable word lists out there, but the copyrightability of word lists is an interesting murky area of copyright law that I'd rather steer clear of, just in case.
