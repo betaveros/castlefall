@@ -80,10 +80,13 @@ type Round = {
 
 type RoundComponentProps = {
   round: Round;
-  myName: string|undefined;
+  myName: string | undefined;
 };
 
-class RoundComponent extends Component<RoundComponentProps, { shown: boolean }> {
+class RoundComponent extends Component<
+  RoundComponentProps,
+  { shown: boolean }
+> {
   constructor(props: RoundComponentProps) {
     super(props);
     this.state = { shown: true };
@@ -113,18 +116,31 @@ class RoundComponent extends Component<RoundComponentProps, { shown: boolean }> 
   };
 
   render() {
-    const { round: { roundNumber, players, words, word: roundWord }, myName } = this.props;
+    const {
+      round: { roundNumber, players, words, word: roundWord },
+      myName
+    } = this.props;
 
     return (
       <div className="round">
         <h3>Round {roundNumber}</h3>
-        <ColumnContainer list={players.map(({ name, word }) => {
-			if (word) {
-				return <div className={word === roundWord ? "same" : undefined}>{name}: {word}</div>;
-			} else {
-				return <div className={name === myName ? "same" : undefined}>{name}</div>;
-			}
-		})} />
+        <ColumnContainer
+          list={players.map(({ name, word }) => {
+            if (word) {
+              return (
+                <div className={word === roundWord ? "same" : undefined}>
+                  {name}: {word}
+                </div>
+              );
+            } else {
+              return (
+                <div className={name === myName ? "same" : undefined}>
+                  {name}
+                </div>
+              );
+            }
+          })}
+        />
         <h3>Words</h3>
         <ColumnContainer list={words} />
         {this.renderWordDiv()}
@@ -339,7 +355,8 @@ type NewRoundFormState = {
 };
 
 class NewRoundForm extends React.Component<
-  NewRoundFormProps, NewRoundFormState
+  NewRoundFormProps,
+  NewRoundFormState
 > {
   constructor(props: NewRoundFormProps) {
     super(props);
@@ -452,7 +469,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       wordlists: [],
       messages: [],
       rounds: [],
-      autokick: true,
+      autokick: true
     };
 
     this.ws = undefined;
@@ -518,7 +535,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     ws.onopen = function() {
       ws.send(
         JSON.stringify({
-          name: myName,
+          name: myName || null,
           room: room
         })
       );
@@ -542,13 +559,19 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         this.setState({ spectators: data.spectators });
       }
       if (data.round) {
-        const { number: roundNumber, starter, players, words, word } = data.round;
+        const {
+          number: roundNumber,
+          starter,
+          players,
+          words,
+          word
+        } = data.round;
 
         const round: Round = {
           roundNumber,
           players,
           words,
-          word,
+          word
         };
         this.addMessage(
           "roundstart",
@@ -576,27 +599,37 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       }
       if (data.autokick) {
         const { name, value } = data.autokick;
-		  if (name) {
-			this.addMessage("setting", `${name} has ${value ? "enabled" : "disabled"} autokicking disconnected players`);
-		  } else {
-			this.addMessage("setting", `Autokicking disconnected players is ${value ? "enabled" : "disabled"}`);
-		  }
-		this.setState({ autokick: data.autokick.value });
+        if (name) {
+          this.addMessage(
+            "setting",
+            `${name} has ${
+              value ? "enabled" : "disabled"
+            } autokicking disconnected players`
+          );
+        } else {
+          this.addMessage(
+            "setting",
+            `Autokicking disconnected players is ${
+              value ? "enabled" : "disabled"
+            }`
+          );
+        }
+        this.setState({ autokick: data.autokick.value });
       }
       if (data.spoiler) {
         const { number: roundNumber, players } = data.spoiler;
 
         this.setState((state: CastlefallState) => ({
-          rounds: state.rounds.map((round) => {
-			  if (round.roundNumber === roundNumber) {
-				  return {
-					  ...round,
-					  players,
-				  };
-			  } else {
-				  return round;
-			  }
-		  }),
+          rounds: state.rounds.map(round => {
+            if (round.roundNumber === roundNumber) {
+              return {
+                ...round,
+                players
+              };
+            } else {
+              return round;
+            }
+          })
         }));
       }
     };
@@ -631,14 +664,14 @@ class CastlefallApp extends Component<{}, CastlefallState> {
 
   handleChangeAutokick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (this.ws) {
-        console.log(event);
+      console.log(event);
       this.ws.send(
         JSON.stringify({
           autokick: event.target.checked
         })
       );
     }
-  }
+  };
 
   render() {
     const {
@@ -649,7 +682,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       rounds,
       lastRound,
       wordlists,
-		autokick,
+      autokick
     } = this.state;
 
     return (
@@ -668,7 +701,14 @@ class CastlefallApp extends Component<{}, CastlefallState> {
           </a>
         </div>
         <form>
-            <input type="checkbox" checked={autokick} onChange={this.handleChangeAutokick} id="autokick" disabled={!myName} /><label htmlFor="autokick"> autokick?</label>
+          <input
+            type="checkbox"
+            checked={autokick}
+            onChange={this.handleChangeAutokick}
+            id="autokick"
+            disabled={!myName}
+          />
+          <label htmlFor="autokick"> autokick?</label>
         </form>
         <div id="msgwrap" ref={this.msgWrapRef}>
           <MessageTable messages={messages} />
@@ -695,7 +735,11 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         <h2>Rounds</h2>
         <div id="rounds">
           {rounds.map(round => (
-            <RoundComponent round={round} key={round.roundNumber} myName={myName} />
+            <RoundComponent
+              round={round}
+              key={round.roundNumber}
+              myName={myName}
+            />
           ))}
         </div>
       </div>
