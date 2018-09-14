@@ -76,6 +76,7 @@ type Round = {
   players: RoundPlayer[];
   words: string[];
   word: string | undefined;
+  status: "active" | "spoiled";
 };
 
 type RoundComponentProps = {
@@ -117,12 +118,12 @@ class RoundComponent extends Component<
 
   render() {
     const {
-      round: { roundNumber, players, words, word: roundWord },
+      round: { roundNumber, players, words, word: roundWord, status },
       myName
     } = this.props;
 
     return (
-      <div className="round">
+      <div className={`round ${status}`}>
         <h3>Round {roundNumber}</h3>
         <ColumnContainer
           list={players.map(({ name, word }) => {
@@ -587,7 +588,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             roundNumber,
             players,
             words,
-            word
+            word,
+            status: "active"
           };
           this.addMessage(
             "roundstart",
@@ -640,7 +642,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
               if (round.roundNumber === roundNumber) {
                 return {
                   ...round,
-                  players
+                  players,
+                  status: "spoiled"
                 };
               } else {
                 return round;
