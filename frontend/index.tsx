@@ -167,10 +167,14 @@ class DateTd extends PureComponent<{ date: Date }> {
   }
 }
 
+const TIMER_FADE_OUT_SECONDS = 5;
+
 type TimerProps = {
   template: string;
   date: Date;
+  totalSeconds: number;
 };
+
 class TimerRow extends Component<TimerProps, { currentDate: Date }> {
   interval: number | undefined;
 
@@ -194,15 +198,23 @@ class TimerRow extends Component<TimerProps, { currentDate: Date }> {
   }
 
   update = () => {
-    this.setState({
-      currentDate: new Date()
-    });
+    const { date, totalSeconds } = this.props;
+    const currentDate = new Date();
+    const secondsLeft =
+      totalSeconds - (currentDate.getTime() - date.getTime()) / 1000;
+
+    this.setState({ currentDate });
+
+    if (secondsLeft < -TIMER_FADE_OUT_SECONDS && this.interval !== undefined) {
+      window.clearInterval(this.interval);
+    }
   };
 
   render() {
-    const { template, date } = this.props;
+    const { template, date, totalSeconds } = this.props;
     const { currentDate } = this.state;
-    const secondsLeft = 60 - (currentDate.getTime() - date.getTime()) / 1000;
+    const secondsLeft =
+      totalSeconds - (currentDate.getTime() - date.getTime()) / 1000;
 
     if (secondsLeft > 0) {
       const fraction = secondsLeft / 60;
@@ -222,8 +234,8 @@ class TimerRow extends Component<TimerProps, { currentDate: Date }> {
           </td>
         </tr>
       );
-    } else if (secondsLeft > -5) {
-      const opacity = 0.1 * (secondsLeft + 5);
+    } else if (secondsLeft > -TIMER_FADE_OUT_SECONDS) {
+      const opacity = 0.1 * (secondsLeft + TIMER_FADE_OUT_SECONDS);
       return (
         <tr
           style={{
@@ -264,6 +276,7 @@ class MessageComponent extends Component<{ message: Message }> {
         <TimerRow
           template={`${message.content} started the timer! Time left:`}
           date={message.date}
+          totalSeconds={60}
         />
       );
     } else {
@@ -469,7 +482,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       wordlists: [],
       messages: [],
       rounds: [],
-      autokick: true,
+      autokick: true
     };
 
     this.ws = undefined;
@@ -636,7 +649,10 @@ class CastlefallApp extends Component<{}, CastlefallState> {
           }));
         }
       } catch (ex) {
-        this.addMessage("error", "Error while handling server message: " + ex.message);
+        this.addMessage(
+          "error",
+          "Error while handling server message: " + ex.message
+        );
       }
     };
   }
@@ -694,7 +710,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       rounds,
       lastRound,
       wordlists,
-      autokick,
+      autokick
     } = this.state;
 
     return (
@@ -759,7 +775,10 @@ class CastlefallApp extends Component<{}, CastlefallState> {
   }
 }
 
-class CastlefallErrorBoundary extends Component<{}, { error: Error|undefined, info: {}|undefined }> {
+class CastlefallErrorBoundary extends Component<
+  {},
+  { error: Error | undefined; info: {} | undefined }
+> {
   constructor(props: {}) {
     super(props);
     this.state = { error: undefined, info: undefined };
@@ -776,7 +795,8 @@ class CastlefallErrorBoundary extends Component<{}, { error: Error|undefined, in
       return (
         <pre class="full-error">
           <h2>Error</h2>
-          <strong>{error.message}</strong>{"\n"}
+          <strong>{error.message}</strong>
+          {"\n"}
           {info && info.componentStack}
         </pre>
       );
