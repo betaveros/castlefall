@@ -90,7 +90,7 @@ class Room:
         self.round = 0
         self.round_starter = ""
         self.last_start = time.time()
-        self.players_in_round: List[dict] = []
+        self.players_in_round: List[str] = []
         self.assigned_words: Dict[str, str] = {}
         self.words: List[str] = []
         self.words_left: Dict[str, List[str]] = collections.defaultdict(list)
@@ -258,8 +258,8 @@ class CastlefallFactory(WebSocketServerFactory):
                 'spectators': room.get_num_spectators(),
             })
 
-    def kick(self, client: CastlefallProtocol, name: str):
-        _, room = self.name_and_room_playing_in(client)
+    def kick(self, source_client: CastlefallProtocol, name: str):
+        _, room = self.name_and_room_playing_in(source_client)
         if not room: return
         if room.has_player(name):
             client = room.get_player_client(name)
