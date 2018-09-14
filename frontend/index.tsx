@@ -469,7 +469,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       wordlists: [],
       messages: [],
       rounds: [],
-      autokick: true
+      autokick: true,
     };
 
     this.ws = undefined;
@@ -499,19 +499,21 @@ class CastlefallApp extends Component<{}, CastlefallState> {
   }
 
   addMessage(type: MessageType, content: string) {
-    console.error("addMessage todo: " + type + content);
-
-    // TODO: This is sketchy
-    if (this.msgWrapRef.current) {
-      const wrap = this.msgWrapRef.current;
-      const shouldRescroll =
-        wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 1;
-      console.log(shouldRescroll);
-      if (shouldRescroll) {
-        window.requestAnimationFrame(() => {
-          wrap.scrollTop = wrap.scrollHeight;
-        });
+    try {
+      if (this.msgWrapRef.current) {
+        const wrap = this.msgWrapRef.current;
+        const shouldRescroll =
+          wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 1;
+        if (shouldRescroll) {
+          // TODO: This is sketchy
+          window.requestAnimationFrame(() => {
+            wrap.scrollTop = wrap.scrollHeight;
+          });
+        }
       }
+    } catch (ex) {
+      console.error("Rescroll failed!");
+      // just scrolling animation, it's ok if it doesn't work
     }
 
     const message: Message = {
@@ -547,92 +549,102 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       this.addMessage("error", "Connection error: " + JSON.stringify(event));
     };
     ws.onmessage = event => {
-      const data = JSON.parse(event.data);
-      console.log(data);
-      if (data.version) {
-        this.setState({ serverVersion: data.version });
-      }
-      if (data.players) {
-        this.setState({ players: data.players });
-      }
-      if (data.spectators) {
-        this.setState({ spectators: data.spectators });
-      }
-      if (data.round) {
-        const {
-          number: roundNumber,
-          starter,
-          players,
-          words,
-          word
-        } = data.round;
-
-        const round: Round = {
-          roundNumber,
-          players,
-          words,
-          word
-        };
-        this.addMessage(
-          "roundstart",
-          `${starter} has started Round ${roundNumber}`
-        );
-
-        this.setState((state: CastlefallState) => ({
-          rounds: [round, ...state.rounds],
-          lastRound: roundNumber
-        }));
-      }
-      if (data.error) {
-        this.addMessage("error", data.error);
-      }
-      if (data.chat) {
-        const { name, msg } = data.chat;
-
-        this.addMessage("chat", `${name}: ${msg}`);
-      }
-      if (data.timer) {
-        this.addMessage("timer", data.timer.name);
-      }
-      if (data.wordlists) {
-        this.setState({ wordlists: data.wordlists });
-      }
-      if (data.autokick) {
-        const { name, value } = data.autokick;
-        if (name) {
-          this.addMessage(
-            "setting",
-            `${name} has ${
-              value ? "enabled" : "disabled"
-            } autokicking disconnected players`
-          );
-        } else {
-          this.addMessage(
-            "setting",
-            `Autokicking disconnected players is ${
-              value ? "enabled" : "disabled"
-            }`
-          );
+      try {
+        const data = JSON.parse(event.data);
+        console.log(data);
+        if (data.version) {
+          this.setState({ serverVersion: data.version });
         }
-        this.setState({ autokick: data.autokick.value });
-      }
-      if (data.spoiler) {
-        const { number: roundNumber, players } = data.spoiler;
+        if (data.players) {
+          this.setState({ players: data.players });
+        }
+        if (data.spectators) {
+          this.setState({ spectators: data.spectators });
+        }
+        if (data.round) {
+          const {
+            number: roundNumber,
+            starter,
+            players,
+            words,
+            word
+          } = data.round;
 
-        this.setState((state: CastlefallState) => ({
-          rounds: state.rounds.map(round => {
-            if (round.roundNumber === roundNumber) {
-              return {
-                ...round,
-                players
-              };
-            } else {
-              return round;
-            }
-          })
-        }));
+          const round: Round = {
+            roundNumber,
+            players,
+            words,
+            word
+          };
+          this.addMessage(
+            "roundstart",
+            `${starter} has started Round ${roundNumber}`
+          );
+
+          this.setState((state: CastlefallState) => ({
+            rounds: [round, ...state.rounds],
+            lastRound: roundNumber
+          }));
+        }
+        if (data.error) {
+          this.addMessage("error", data.error);
+        }
+        if (data.chat) {
+          const { name, msg } = data.chat;
+
+          this.addMessage("chat", `${name}: ${msg}`);
+        }
+        if (data.timer) {
+          this.addMessage("timer", data.timer.name);
+        }
+        if (data.wordlists) {
+          this.setState({ wordlists: data.wordlists });
+        }
+        if (data.autokick) {
+          const { name, value } = data.autokick;
+          if (name) {
+            this.addMessage(
+              "setting",
+              `${name} has ${
+                value ? "enabled" : "disabled"
+              } autokicking disconnected players`
+            );
+          } else {
+            this.addMessage(
+              "setting",
+              `Autokicking disconnected players is ${
+                value ? "enabled" : "disabled"
+              }`
+            );
+          }
+          this.setState({ autokick: data.autokick.value });
+        }
+        if (data.spoiler) {
+          const { number: roundNumber, players } = data.spoiler;
+
+          this.setState((state: CastlefallState) => ({
+            rounds: state.rounds.map(round => {
+              if (round.roundNumber === roundNumber) {
+                return {
+                  ...round,
+                  players
+                };
+              } else {
+                return round;
+              }
+            })
+          }));
+        }
+      } catch (ex) {
+        this.addMessage("error", "Error while handling server message: " + ex.message);
       }
     };
+  }
+
+  componentWillUnmount() {
+    if (this.ws) {
+      this.ws.close();
+    }
   }
 
   handleBroadcastTimer = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -682,7 +694,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       rounds,
       lastRound,
       wordlists,
-      autokick
+      autokick,
     } = this.state;
 
     return (
@@ -747,4 +759,31 @@ class CastlefallApp extends Component<{}, CastlefallState> {
   }
 }
 
-ReactDOM.render(<CastlefallApp />, document.getElementById("root"));
+class CastlefallErrorBoundary extends Component<{}, { error: Error|undefined, info: {}|undefined }> {
+  constructor(props: {}) {
+    super(props);
+    this.state = { error: undefined, info: undefined };
+  }
+
+  componentDidCatch(error, info) {
+    this.setState({ error, info });
+  }
+
+  render() {
+    const { error, info } = this.state;
+
+    if (error) {
+      return (
+        <pre class="full-error">
+          <h2>Error</h2>
+          <strong>{error.message}</strong>{"\n"}
+          {info && info.componentStack}
+        </pre>
+      );
+    } else {
+      return <CastlefallApp />;
+    }
+  }
+}
+
+ReactDOM.render(<CastlefallErrorBoundary />, document.getElementById("root"));
