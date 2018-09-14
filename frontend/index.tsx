@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 
 // FIXME
 export const websocketURL = "ws://localhost:8372/";
-const CLIENT_VERSION = "v0.6";
+const CLIENT_VERSION = "v0.6.1";
 
 type PlayerStatus = "active" | "disconnected";
 type Player = {
