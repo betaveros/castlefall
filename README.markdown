@@ -27,9 +27,9 @@ The usual strategy is to give clues about your word that are recognizable to peo
 Setup/Development
 ===========
 
-The server is just Python 3, with Twisted and Autobahn.
+The server is just Python 3, with Twisted and Autobahn. (Setup a virtualenv if you'd like, then run `pip install -r requirements.txt` to install dependencies.)
 
-The frontend is in the `frontend` directory, and is Yarn + React + TypeScript + Webpack. In theory if you run `yarn install` or something you'll be able to install everything and get things working. `yarn run webpack-dev-server` gives you a dev server that will automatically refresh when you change the JavaScript, which is pretty nice.
+The frontend is in the `frontend` directory, and is Yarn + React + TypeScript + Webpack. In theory if you run `yarn install` you'll be able to install everything and get things working. `yarn run webpack-dev-server` gives you a dev server that will automatically refresh when you change the JavaScript, which is pretty nice. (`npm` will probably also work well enough.)
 
 I need to set up a separate uncommitted config file, but for now, set up the Python websockets server running somewhere (run with `prod` as an argument to actually serve to the world), transpile the JS with `websocketURL` pointed to the server, and serve the HTML and transpiled JS page.
 
