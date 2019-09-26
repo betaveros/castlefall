@@ -231,6 +231,7 @@ class CastlefallFactory(WebSocketServerFactory):
                 'players': [{'name': player} for player in room.players_in_round],
                 'words': room.get_words_shuffled(),
                 'word': room.get_assigned_word(name) if name else None,
+                'secondsAgo': time.time() - room.last_start,
             },
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,

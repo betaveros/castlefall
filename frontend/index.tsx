@@ -76,6 +76,7 @@ type Round = {
   words: string[];
   word: string | undefined;
   status: "active" | "spoiled";
+  secondsAgo?: number;
 };
 
 type RoundComponentProps = {
@@ -259,7 +260,7 @@ class TimerRow extends Component<TimerProps, { currentDate: Date }> {
   }
 }
 
-type MessageType = "roundstart" | "error" | "chat" | "timer" | "setting";
+type MessageType = "roundstart" | "roundstartpast" | "error" | "chat" | "timer" | "setting";
 
 type Message = {
   type: MessageType;
@@ -466,6 +467,13 @@ type CastlefallState = {
   autokick: boolean;
 };
 
+const formatTimeInterval = (seconds: number) => {
+  if (seconds < 60) return `${seconds.toFixed(1)} seconds`;
+  if (seconds < 60 * 60) return `${(seconds / 60).toFixed(1)} minutes`;
+  if (seconds < 24 * 60 * 60) return `${(seconds / 60 / 60).toFixed(1)} hours`;
+  return `${(seconds / 24 / 60 / 60).toFixed(1)} days`;
+};
+
 class CastlefallApp extends Component<{}, CastlefallState> {
   ws: WebSocket | undefined;
   msgWrapRef: any; // React.Ref<HTMLDivElement>;
@@ -580,7 +588,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             starter,
             players,
             words,
-            word
+            word,
+            secondsAgo,
           } = data.round;
 
           const round: Round = {
@@ -590,15 +599,24 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             word,
             status: "active"
           };
-          this.addMessage(
-            "roundstart",
-            `${starter} has started Round ${roundNumber}`
-          );
 
-          this.setState((state: CastlefallState) => ({
-            rounds: [round, ...state.rounds],
-            lastRound: roundNumber
-          }));
+          if (roundNumber) {
+            if (secondsAgo) {
+              this.addMessage(
+                "roundstartpast",
+                `${starter} started Round ${roundNumber} (${formatTimeInterval(secondsAgo)} ago)`
+              );
+            } else {
+              this.addMessage(
+                "roundstart",
+                `${starter} has started Round ${roundNumber}`
+              );
+            }
+            this.setState((state: CastlefallState) => ({
+              rounds: [round, ...state.rounds],
+              lastRound: roundNumber
+            }));
+          }
         }
         if (data.error) {
           this.addMessage("error", data.error);
@@ -703,6 +721,22 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     }
   };
 
+  renderRounds() {
+    const { rounds, myName } = this.state;
+
+    if (rounds.length) {
+      return rounds.map(round => (
+        <RoundComponent
+          round={round}
+          key={round.roundNumber}
+          myName={myName}
+        />
+      ));
+    } else {
+      return "No rounds have been started yet!";
+    }
+  }
+
   render() {
     const {
       myName,
@@ -764,13 +798,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         />
         <h2>Rounds</h2>
         <div id="rounds">
-          {rounds.map(round => (
-            <RoundComponent
-              round={round}
-              key={round.roundNumber}
-              myName={myName}
-            />
-          ))}
+          {this.renderRounds()}
         </div>
       </div>
     );
