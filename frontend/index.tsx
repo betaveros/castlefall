@@ -1,8 +1,7 @@
 import React, { Component, PureComponent } from "react";
 import ReactDOM from "react-dom";
+import { WEBSOCKET_URL } from "./config";
 
-// FIXME
-export const websocketURL = "ws://localhost:8372/";
 const CLIENT_VERSION = "v0.6.2";
 
 type PlayerStatus = "active" | "disconnected";
@@ -546,7 +545,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     const myName = prompt("Enter your name") || undefined;
     this.setState({ room, myName });
 
-    const ws = new WebSocket(websocketURL);
+    const ws = new WebSocket(WEBSOCKET_URL);
     this.ws = ws;
     ws.onopen = function() {
       ws.send(

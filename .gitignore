@@ -1,4 +1,7 @@
 .mypy_cache
 castlefall-config.ts
-dist
+node_modules
+frontend/dist/bundle.js
 wordlists
+venv
+yarn.lock
