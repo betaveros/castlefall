@@ -260,7 +260,8 @@ class TimerRow extends Component<TimerProps, { currentDate: Date }> {
   }
 }
 
-type MessageType = "roundstart" | "roundstartpast" | "error" | "chat" | "timer" | "setting";
+type MessageType = "roundstart" | "roundstartpast" | "connect" | "error" | "chat" | "timer" | "setting";
+type ConnectType = "load" | "changeroom" | "unspectate";
 
 type Message = {
   type: MessageType;
@@ -497,10 +498,17 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     this.msgWrapRef = React.createRef();
   }
 
-  handleRoomHelp = () =>
-    alert(
-      "Append #roomname to the URL and reload to go to a new room. (It's hacky. PRs welcome.)"
-    );
+  handleUnspectate = () => {
+    // TODO: this is pretty hacky but it's probably better than reloading
+    this.connect(this.state.room || "#lobby", "unspectate");
+  }
+
+  handleChangeRoom = () => {
+    const newRoom = prompt("Enter new room") || undefined;
+    if (newRoom) {
+      this.connect(newRoom, "changeroom");
+    }
+  }
 
   renderYouAre() {
     const { myName, room } = this.state;
@@ -513,7 +521,10 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     } else {
       return (
         <span className="spectating">
-          You are spectating in {room} <sup>(reload to join)</sup>
+          You are spectating in {room}
+            <button className="unspectate" onClick={this.handleUnspectate}>
+              join
+            </button>
         </span>
       );
     }
@@ -548,10 +559,27 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     }));
   }
 
-  componentDidMount() {
-    const room = window.location.hash || "#lobby";
+  connect(room: string, type: ConnectType) {
+    if (!room.startsWith("#")) {
+      room = "#" + room;
+    }
+
     const myName = prompt("Enter your name") || undefined;
-    this.setState({ room, myName });
+    this.setState({ room, myName, rounds: [] });
+
+    if (this.ws) {
+      this.ws.onclose = null;
+      this.ws.close();
+    }
+
+    switch (type) {
+      case "changeroom":
+        this.addMessage("connect", `Changing to room ${room} as player ${myName}`);
+        break;
+      case "unspectate":
+        this.addMessage("connect", `Joining room ${room} as player ${myName}`);
+        break;
+    }
 
     const ws = new WebSocket(WEBSOCKET_URL);
     this.ws = ws;
@@ -677,6 +705,10 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     };
   }
 
+  componentDidMount() {
+    this.connect(window.location.hash || "#lobby", "load");
+  }
+
   componentWillUnmount() {
     if (this.ws) {
       this.ws.close();
@@ -752,11 +784,12 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       <div>
         <div>
           {this.renderYouAre()}
-          <sup>
-            <button className="room-help" onClick={this.handleRoomHelp}>
-              ?
-            </button>
-          </sup>{" "}
+          <button className="change-room" onClick={this.handleChangeRoom}>
+            change room
+          </button>
+          {" "}
+        </div>
+        <div>
           (client {CLIENT_VERSION} / server {serverVersion} /{" "}
           <a href="https://github.com/betaveros/castlefall">PRs welcome</a>){" "}
           <a href="rules.html" target="_blank">
