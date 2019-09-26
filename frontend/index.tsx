@@ -422,7 +422,7 @@ class NewRoundForm extends React.Component<
     const { wordcount, wordlist } = this.state;
 
     return (
-      <form onSubmit={this.handleNewRound}>
+      <form onSubmit={this.handleNewRound} id="newroundform">
         <button id="newround" disabled={disabled} type="submit">
           <strong>+</strong> New Round
         </button>
