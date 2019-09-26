@@ -563,6 +563,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     if (!room.startsWith("#")) {
       room = "#" + room;
     }
+    window.location.hash = room;
 
     const myName = prompt("Enter your name") || undefined;
     this.setState({ room, myName, rounds: [] });
