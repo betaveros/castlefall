@@ -743,7 +743,6 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       serverVersion,
       players,
       messages,
-      rounds,
       lastRound,
       wordlists,
       autokick
@@ -823,7 +822,7 @@ class CastlefallErrorBoundary extends Component<
 
     if (error) {
       return (
-        <pre class="full-error">
+        <pre className="full-error">
           <h2>Error</h2>
           <strong>{error.message}</strong>
           {"\n"}
