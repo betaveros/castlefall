@@ -117,6 +117,13 @@ class RoundComponent extends Component<
     }
   };
 
+  renderTeamDescription(playerCount: number) {
+    let countDescription = playerCount === 1 ? "1 player" : `${playerCount} players`;
+    let teamDescription = (playerCount <= 2 ? "¯\\_(ツ)_/¯" :
+        `= ${Math.ceil(playerCount / 2)} vs ${Math.floor(playerCount / 2)}`);
+    return `(${countDescription} ${teamDescription})`;
+  }
+
   render() {
     const {
       round: { roundNumber, players, words, word: roundWord, wordlist, status },
@@ -125,7 +132,12 @@ class RoundComponent extends Component<
 
     return (
       <div className={`round ${status}`}>
-        <h3>Round {roundNumber}</h3>
+        <h3>
+          Round {roundNumber}{" "}
+          <span className="round-stats">
+            {this.renderTeamDescription(players.length)}
+          </span>
+        </h3>
         <ColumnContainer
           list={players.map(({ name, word }) => {
             if (word) {
