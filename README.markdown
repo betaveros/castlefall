@@ -34,6 +34,8 @@ This freeform communication happens until somebody **declares victory** (usually
 
 Note that no matter who made the victory declaration, which team they were on, which method they used, or whether the victory declaration was successful, **you always win or lose together with your team** (the set of people who had the same word as you did).
 
+Also note that the app does not do anything to record or analyze victory declarations, other than revealing the teams and words after the next round starts; it is expected that players will figure out who won themselves, and also keep track of scores if desired (although in the author's experience, Castlefall is usually just played repeatedly without scoring until everybody gets bored).
+
 Strategy
 --------
 
@@ -47,7 +49,7 @@ Words can be replaced by any finite set of distinguishable objects, e.g. Dixit c
 Implementation Notes
 --------------------
 
-The app is designed for people who trust each other to play honestly, so there aren't really any access controls. Anybody in the room can kick anybody else. If you join a room with the same name as somebody in the current round, you will kick them and see their word; this is meant so that you can reconnect as yourself and keep playing if your device disconnects for some reason.
+The app is designed for people who trust each other to play honestly, so there aren't really any access controls. Anybody in the room can kick anybody else, including themselves. If you join a room with the same name as somebody in the current round, you will kick them and see their word; this is meant so that you can reconnect as yourself and keep playing if your device disconnects for some reason.
 
 Setup/Development
 -----------------
