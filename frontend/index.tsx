@@ -783,30 +783,31 @@ class CastlefallApp extends Component<{}, CastlefallState> {
 
     return (
       <div>
+        <div className="top">
+          <h1><img id="icon" src="castlefall.png" alt="Castlefall logo"/>Castlefall</h1>
+          <aside>
+            <div><a href="rules.html" target="_blank">Castlefall rules</a></div>
+            <div>client {CLIENT_VERSION}</div>
+            <div>server {serverVersion}</div>
+            <div><a href="https://github.com/betaveros/castlefall">PRs welcome</a></div>
+          </aside>
+        </div>
         <div>
           {this.renderYouAre()}
           <button className="change-room" onClick={this.handleChangeRoom}>
             change room
           </button>
-          {" "}
+          <form>
+            <input
+              type="checkbox"
+              checked={autokick}
+              onChange={this.handleChangeAutokick}
+              id="autokick"
+              disabled={!myName}
+            />
+            <label htmlFor="autokick"> autokick?</label>
+          </form>
         </div>
-        <div>
-          (client {CLIENT_VERSION} / server {serverVersion} /{" "}
-          <a href="https://github.com/betaveros/castlefall">PRs welcome</a>){" "}
-          <a href="rules.html" target="_blank">
-            Castlefall rules
-          </a>
-        </div>
-        <form>
-          <input
-            type="checkbox"
-            checked={autokick}
-            onChange={this.handleChangeAutokick}
-            id="autokick"
-            disabled={!myName}
-          />
-          <label htmlFor="autokick"> autokick?</label>
-        </form>
         <div id="msgwrap" ref={this.msgWrapRef}>
           <MessageTable messages={messages} />
         </div>

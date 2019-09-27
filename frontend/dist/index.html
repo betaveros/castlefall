@@ -5,6 +5,11 @@
 		<title>Castlefall</title>
 		<style>
 #wrap { max-width: 42em; margin: 0 auto; }
+.top aside { margin-left: auto; display: flex; text-align: center; margin-bottom: 1em; }
+@media (min-width: 400px) {
+	.top { display: flex; }
+	.top aside { display: block; text-align: right; }
+}
 #icon { vertical-align: middle; }
 body { font-family: sans-serif; margin: 0; padding: 0.5em; }
 #time { font-family: monospace; font-size: 150%; }
@@ -163,6 +168,7 @@ button[disabled], button[disabled]:hover, button[disabled]:active, button[disabl
 }
 #newroundform {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 }
 #newroundform input, #newroundform select {
@@ -179,7 +185,6 @@ button#newround {
 	</head>
 	<body>
 		<div id="wrap">
-			<h1><img id="icon" src="castlefall.png" alt="Castlefall logo"/>Castlefall</h1>
 			<div id="root"></div>
 		</div>
 		<script src="bundle.js"></script>
