@@ -2,7 +2,7 @@ import React, { Component, PureComponent } from "react";
 import ReactDOM from "react-dom";
 import { WEBSOCKET_URL } from "./config";
 
-const CLIENT_VERSION = "v0.8";
+const CLIENT_VERSION = "v0.9";
 
 type PlayerStatus = "active" | "disconnected";
 type Player = {
@@ -73,6 +73,7 @@ type RoundPlayer = {
 type Round = {
   roundNumber: number;
   players: RoundPlayer[];
+  wordlist: string;
   words: string[];
   word: string | undefined;
   status: "active" | "spoiled";
@@ -118,7 +119,7 @@ class RoundComponent extends Component<
 
   render() {
     const {
-      round: { roundNumber, players, words, word: roundWord, status },
+      round: { roundNumber, players, words, word: roundWord, wordlist, status },
       myName
     } = this.props;
 
@@ -142,7 +143,7 @@ class RoundComponent extends Component<
             }
           })}
         />
-        <h3>Words</h3>
+        <h3>Words {wordlist && <span className="wordlist-name">({words.length} from {wordlist})</span>}</h3>
         <ColumnContainer list={words} />
         {this.renderWordDiv()}
       </div>
@@ -621,6 +622,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             players,
             words,
             word,
+            wordlist,
             secondsAgo,
           } = data.round;
 
@@ -629,6 +631,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             players,
             words,
             word,
+            wordlist,
             status: "active"
           };
 

@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.8"
+version = "v0.9"
 
 wordlist_directory = 'wordlists'
 
@@ -96,6 +96,7 @@ class Room:
         self.last_start = time.time()
         self.players_in_round: List[str] = []
         self.assigned_words: Dict[str, str] = {}
+        self.wordlist_name = ""
         self.words: List[str] = []
         self.words_left: Dict[str, List[str]] = collections.defaultdict(list)
         self.autokick: bool = True
@@ -175,6 +176,7 @@ class Room:
 
         try:
             wordlist_name = val['wordlist']
+            self.wordlist_name = wordlist_name
             words = self.select_words(wordlist_name, wordcount)
         except KeyError:
             raise Exception('Start fail: could not select words from wordlist')
@@ -195,6 +197,20 @@ class Room:
         copy = list(self.words)
         random.shuffle(copy)
         return copy
+
+    def get_round_json(self, name: Optional[str], old: bool) -> dict:
+        payload = {
+            'number': self.round,
+            'starter': self.round_starter,
+            'players': [{'name': player} for player in self.players_in_round],
+            'words': self.get_words_shuffled(),
+            'word': self.get_assigned_word(name) if name else None,
+            'wordlist': self.wordlist_name,
+        }
+
+        if old: payload['secondsAgo'] = time.time() - self.last_start
+
+        return payload
 
 class CastlefallFactory(WebSocketServerFactory):
     def __init__(self, *args, **kwargs):
@@ -230,14 +246,7 @@ class CastlefallFactory(WebSocketServerFactory):
             'players': room.get_player_data(),
             'spectators': room.get_num_spectators(),
             'room': room_name,
-            'round': {
-                'number': room.round,
-                'starter': room.round_starter,
-                'players': [{'name': player} for player in room.players_in_round],
-                'words': room.get_words_shuffled(),
-                'word': room.get_assigned_word(name) if name else None,
-                'secondsAgo': time.time() - room.last_start,
-            },
+            'round': room.get_round_json(name, old=True),
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,
             'autokick': { 'value': room.autokick },
@@ -358,13 +367,7 @@ class CastlefallFactory(WebSocketServerFactory):
                 for name, client in room.get_named_all_clients():
                     self.send(client, {
                         'spoiler': spoiler,
-                        'round': {
-                            'number': room.round,
-                            'starter': room.round_starter,
-                            'players': [{'name': player} for player in room.players_in_round],
-                            'words': room.get_words_shuffled(),
-                            'word': room.get_assigned_word(name) if name else None,
-                        }
+                        'round': room.get_round_json(name, old=False),
                     })
             except Exception as e:
                 self.send(orig_client, {
