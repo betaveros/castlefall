@@ -295,7 +295,7 @@ class MessageComponent extends Component<{ message: Message }> {
 class MessageTable extends Component<{ messages: Message[] }> {
   render() {
     return (
-      <table id="msg">
+      <table className="msg">
         <tbody>
           {this.props.messages.map((message: Message, index: number) => (
             <MessageComponent message={message} key={index} />
@@ -339,11 +339,10 @@ class ChatForm extends Component<ChatFormProps, { value: string }> {
     const { disabled, ws } = this.props;
 
     return (
-      <form id="chatform" onSubmit={this.handleSubmit}>
+      <form className="chatform" onSubmit={this.handleSubmit}>
         <input
           type="text"
-          id="chat"
-          className="text"
+          className="text chatbox"
           placeholder="Chat..."
           size={40}
           value={this.state.value}
@@ -423,15 +422,15 @@ class NewRoundForm extends React.Component<
     const { wordcount, wordlist } = this.state;
 
     return (
-      <form onSubmit={this.handleNewRound} id="newroundform">
-        <button id="newround" disabled={disabled} type="submit">
+      <form onSubmit={this.handleNewRound} className="newroundform">
+        <button className="newround" disabled={disabled} type="submit">
           <strong>+</strong> New Round
         </button>
         with{" "}
         <input
           type="text"
           id="wordcount"
-          className="text"
+          className="text wordcount"
           value={wordcount}
           onChange={this.handleWordcountChange}
           size={2}
@@ -439,7 +438,7 @@ class NewRoundForm extends React.Component<
         />
         <label htmlFor="wordcount"> words from</label>{" "}
         <select
-          id="wordlists"
+          className="wordlists"
           value={wordlist}
           onChange={this.handleWordlistChange}
           disabled={disabled}
@@ -784,7 +783,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     return (
       <div>
         <div className="top">
-          <h1><img id="icon" src="castlefall.png" alt="Castlefall logo"/>Castlefall</h1>
+          <h1><img className="icon" src="castlefall.png" alt="Castlefall logo"/>Castlefall</h1>
           <aside>
             <div><a href="rules.html" target="_blank">Castlefall rules</a></div>
             <div>client {CLIENT_VERSION}</div>
@@ -808,13 +807,12 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             <label htmlFor="autokick"> autokick?</label>
           </form>
         </div>
-        <div id="msgwrap" ref={this.msgWrapRef}>
+        <div className="msgwrap" ref={this.msgWrapRef}>
           <MessageTable messages={messages} />
         </div>
-        <div id="chatwrap">
+        <div className="chatwrap">
           <ChatForm disabled={!myName} ws={this.ws} />
           <button
-            id="broadcast-timer"
             disabled={!myName}
             onClick={this.handleBroadcastTimer}
           >
@@ -823,7 +821,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         </div>
         <h2>Players</h2>
         <PlayerTable canKick={!!myName} ws={this.ws} players={players} />
-        <span id="spectators">{this.renderSpectators()}</span>
+        <span>{this.renderSpectators()}</span>
         <NewRoundForm
           disabled={!myName}
           lastRound={lastRound}
