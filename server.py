@@ -72,6 +72,10 @@ class CastlefallProtocol(WebSocketServerProtocol):
             autokick = data['autokick']
             print('autokick set to', autokick)
             self.factory.set_autokick_and_broadcast(self, autokick)
+        if 'timerLength' in data:
+            timer_length = data['timerLength']
+            print('timer length set to', timer_length)
+            self.factory.set_timer_length_and_broadcast(self, timer_length)
 
 def json_to_bytes(obj: dict) -> bytes:
     return codecs.encode(json.dumps(obj), 'utf-8')
@@ -95,6 +99,7 @@ class Room:
         self.words: List[str] = []
         self.words_left: Dict[str, List[str]] = collections.defaultdict(list)
         self.autokick: bool = True
+        self.timer_length: int = 60
 
     def has_player(self, name: str) -> bool:
         return name in self.d
@@ -236,6 +241,7 @@ class CastlefallFactory(WebSocketServerFactory):
             'wordlists': [[k, len(v)] for k, v in sorted(wordlists.items())],
             'version': version,
             'autokick': { 'value': room.autokick },
+            'timerLength': { 'value': room.timer_length },
         })
 
     def unregister(self, client: CastlefallProtocol) -> None:
@@ -291,6 +297,7 @@ class CastlefallFactory(WebSocketServerFactory):
         if room:
             self.broadcast(room, {'timer': {
                 'name': name,
+                'timerLength': room.timer_length,
             }})
 
     def set_autokick_and_broadcast(self, client: CastlefallProtocol, autokick: bool):
@@ -300,6 +307,15 @@ class CastlefallFactory(WebSocketServerFactory):
             self.broadcast(room, {'autokick': {
                 'name': name,
                 'value': room.autokick,
+            }})
+
+    def set_timer_length_and_broadcast(self, client: CastlefallProtocol, timer_length: int):
+        name, room = self.name_and_room_playing_in(client)
+        if room:
+            room.timer_length = int(timer_length)
+            self.broadcast(room, {'timerLength': {
+                'name': name,
+                'value': room.timer_length,
             }})
 
     def broadcast(self, room: Room, obj: dict) -> None:

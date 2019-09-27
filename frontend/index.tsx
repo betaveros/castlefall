@@ -218,7 +218,7 @@ class TimerRow extends Component<TimerProps, { currentDate: Date }> {
       totalSeconds - (currentDate.getTime() - date.getTime()) / 1000;
 
     if (secondsLeft > 0) {
-      const fraction = secondsLeft / 60;
+      const fraction = secondsLeft / totalSeconds;
       const percent = 100 * fraction + "%";
       const hue = fraction * 120;
       return (
@@ -266,6 +266,7 @@ type ConnectType = "load" | "changeroom" | "unspectate";
 type Message = {
   type: MessageType;
   content: string;
+  timerLength?: number;
   date: Date;
 };
 
@@ -273,12 +274,12 @@ class MessageComponent extends Component<{ message: Message }> {
   render() {
     const { message } = this.props;
 
-    if (message.type === "timer") {
+    if (message.type === "timer" && message.timerLength) {
       return (
         <TimerRow
           template={`${message.content} started the timer! Time left:`}
           date={message.date}
-          totalSeconds={60}
+          totalSeconds={message.timerLength}
         />
       );
     } else {
@@ -464,6 +465,7 @@ type CastlefallState = {
   wordlists: WordlistInfo[];
   messages: Message[];
   rounds: Round[];
+  timerLength: number;
   autokick: boolean;
 };
 
@@ -490,7 +492,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       wordlists: [],
       messages: [],
       rounds: [],
-      autokick: true
+      timerLength: 60,
+      autokick: true,
     };
 
     this.ws = undefined;
@@ -529,7 +532,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     }
   }
 
-  addMessage(type: MessageType, content: string) {
+  addMessage(type: MessageType, content: string, timerLength?: number) {
     try {
       if (this.msgWrapRef.current) {
         const wrap = this.msgWrapRef.current;
@@ -549,8 +552,9 @@ class CastlefallApp extends Component<{}, CastlefallState> {
 
     const message: Message = {
       type,
+      date: new Date(),
       content,
-      date: new Date()
+      timerLength,
     };
 
     this.setState(state => ({
@@ -655,10 +659,25 @@ class CastlefallApp extends Component<{}, CastlefallState> {
           this.addMessage("chat", `${name}: ${msg}`);
         }
         if (data.timer) {
-          this.addMessage("timer", data.timer.name);
+          this.addMessage("timer", data.timer.name, data.timer.timerLength);
         }
         if (data.wordlists) {
           this.setState({ wordlists: data.wordlists });
+        }
+        if (data.timerLength) {
+          const { name, value } = data.timerLength;
+          if (name) {
+            this.addMessage(
+              "setting",
+              `${name} has set timer length to ${value} seconds`
+            );
+          } else {
+            this.addMessage(
+              "setting",
+              `Timer length is ${value} seconds`
+            );
+          }
+          this.setState({ timerLength: value });
         }
         if (data.autokick) {
           const { name, value } = data.autokick;
@@ -677,7 +696,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
               }`
             );
           }
-          this.setState({ autokick: data.autokick.value });
+          this.setState({ autokick: value });
         }
         if (data.spoiler) {
           const { number: roundNumber, players } = data.spoiler;
@@ -753,6 +772,17 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     }
   };
 
+  handleChangeTimerLength = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (this.ws) {
+      console.log(event);
+      this.ws.send(
+        JSON.stringify({
+          timerLength: event.target.value
+        })
+      );
+    }
+  };
+
   renderRounds() {
     const { rounds, myName } = this.state;
 
@@ -777,7 +807,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       messages,
       lastRound,
       wordlists,
-      autokick
+      timerLength,
+      autokick,
     } = this.state;
 
     return (
@@ -797,6 +828,18 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             change room
           </button>
           <form>
+            <label htmlFor="timer-length">Timer length:</label>
+            <select
+              id="timer-length"
+              className="timer-length"
+              value={timerLength}
+              onChange={this.handleChangeTimerLength}
+              disabled={!myName}
+            >
+              <option value="30">30 sec</option>
+              <option value="45">45 sec</option>
+              <option value="60">60 sec</option>
+            </select>
             <input
               type="checkbox"
               checked={autokick}
