@@ -2,7 +2,7 @@ import React, { Component, PureComponent } from "react";
 import ReactDOM from "react-dom";
 import { WEBSOCKET_URL } from "./config";
 
-const CLIENT_VERSION = "v0.9";
+const CLIENT_VERSION = "v0.9.0";
 
 type PlayerStatus = "active" | "disconnected";
 type Player = {
