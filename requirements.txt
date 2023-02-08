@@ -4,7 +4,7 @@ autobahn==21.3.1
 Automat==0.7.0
 cffi==1.12.3
 constantly==15.1.0
-cryptography==3.4.7
+cryptography==39.0.1
 hyperlink==21.0.0
 idna==2.8
 incremental==17.5.0
