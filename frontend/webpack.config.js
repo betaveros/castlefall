@@ -25,7 +25,7 @@ module.exports = options => {
       extensions: [".ts", ".tsx", ".js"],
     },
     devServer: {
-      contentBase: path.join(__dirname, 'dist'),
+      static: path.join(__dirname, 'dist'),
       compress: true,
       port: 8080,
     },
