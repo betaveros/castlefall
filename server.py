@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.9.1"
+version = "v0.9.1.1"
 
 wordlist_directory = 'wordlists'
 
@@ -370,9 +370,21 @@ class CastlefallFactory(WebSocketServerFactory):
                         'round': room.get_round_json(name, old=False),
                     })
             except Exception as e:
-                self.send(orig_client, {
-                    'error': str(e),
-                })
+                try:
+                    self.send(orig_client, {
+                        'round': {
+                            'number': room.round,
+                            'starter': room.round_starter,
+                            'players': [{'name': player} for player in room.players_in_round],
+                            'words': room.get_words_shuffled(),
+                            'word': room.get_assigned_word(name) if name else None,
+                        },
+                        'error': str(e),
+                    })
+                except Exception as e2:
+                    self.send(orig_client, {
+                        'error': str(e) + "; " + str(e2),
+                    })
 
 if __name__ == "__main__":
     log.startLogging(sys.stdout)
