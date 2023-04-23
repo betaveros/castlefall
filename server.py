@@ -377,7 +377,7 @@ class CastlefallFactory(WebSocketServerFactory):
                             'starter': room.round_starter,
                             'players': [{'name': player} for player in room.players_in_round],
                             'words': room.get_words_shuffled(),
-                            'word': room.get_assigned_word(name) if name else None,
+                            'word': room.get_assigned_word(client_name) if client_name else None,
                         },
                         'error': str(e),
                     })
