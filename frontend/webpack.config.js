@@ -2,7 +2,7 @@ var path = require('path');
 
 module.exports = options => {
   return {
-    mode: "development",
+    mode: "production",
     entry: './index.tsx',
     output: {
       filename: 'bundle.js',

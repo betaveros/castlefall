@@ -27,7 +27,7 @@ from autobahn.twisted.resource import WebSocketResource
 
 wordlists: Dict[str, List[str]] = {}
 
-version = "v0.9.1.1"
+version = "v0.9.2"
 
 wordlist_directory = 'wordlists'
 
@@ -162,7 +162,7 @@ class Room:
 
     def start_round(self, starter: str, val: dict) -> None:
         if self.round != val.get('round'):
-            raise Exception('Start fail: round out of sync')
+            raise Exception('Start fail: round out of sync. You may wish to refresh')
         if time.time() < self.last_start + 2:
             raise Exception('Start fail: too soon')
         self.round += 1
@@ -370,21 +370,18 @@ class CastlefallFactory(WebSocketServerFactory):
                         'round': room.get_round_json(name, old=False),
                     })
             except Exception as e:
-                try:
-                    self.send(orig_client, {
-                        'round': {
-                            'number': room.round,
-                            'starter': room.round_starter,
-                            'players': [{'name': player} for player in room.players_in_round],
-                            'words': room.get_words_shuffled(),
-                            'word': room.get_assigned_word(client_name) if client_name else None,
-                        },
-                        'error': str(e),
-                    })
-                except Exception as e2:
-                    self.send(orig_client, {
-                        'error': str(e) + "; " + str(e2),
-                    })
+                self.send(orig_client, {
+                    # the client doesn't actually handle this well, and this is
+                    # the wrong fix anyway...
+                    # 'round': {
+                    #     'number': room.round,
+                    #     'starter': room.round_starter,
+                    #     'players': [{'name': player} for player in room.players_in_round],
+                    #     'words': room.get_words_shuffled(),
+                    #     'word': room.get_assigned_word(client_name) if client_name else None,
+                    # },
+                    'error': str(e),
+                })
 
 if __name__ == "__main__":
     log.startLogging(sys.stdout)

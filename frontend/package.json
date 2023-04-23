@@ -17,16 +17,18 @@
     "@babel/preset-env": "^7.0.0",
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.0.0",
+    "@webpack-cli/serve": "^2.0.2",
     "babel-loader": "^8.0.2",
     "path": "^0.12.7",
     "prettier": "^1.14.2",
     "typescript": "^3.0.3",
-    "webpack": "^5.50.0",
-    "webpack-cli": "^3.1.0",
+    "webpack": "^5.80.0",
+    "webpack-cli": "^5.0.2",
     "webpack-dev-server": "^4.13.3"
   },
   "scripts": {
     "dev": "webpack-dev-server",
-    "typecheck": "tsc --noEmit --jsx react"
+    "typecheck": "tsc --noEmit --jsx react",
+    "build": "webpack --config webpack.config.js"
   }
 }

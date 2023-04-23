@@ -2,7 +2,7 @@ import React, { Component, PureComponent } from "react";
 import ReactDOM from "react-dom";
 import { WEBSOCKET_URL } from "./config";
 
-const CLIENT_VERSION = "v0.9.1";
+const CLIENT_VERSION = "v0.9.2";
 
 type PlayerStatus = "active" | "disconnected";
 type Player = {
@@ -663,6 +663,8 @@ class CastlefallApp extends Component<{}, CastlefallState> {
               rounds: [round, ...state.rounds],
               lastRound: roundNumber
             }));
+          } else if (roundNumber === 0) {
+            this.setState({ lastRound: 0 });
           }
         }
         if (data.error) {
