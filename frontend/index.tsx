@@ -837,6 +837,12 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             <div>client {CLIENT_VERSION}</div>
             <div>server {serverVersion}</div>
             <div><a href="https://github.com/betaveros/castlefall">PRs welcome</a></div>
+            <p>
+                Related app on{' '}
+                <a href="https://play.google.com/store/apps/details?id=glydergames.cipher.ios&hl=en_US&gl=US">Google Play</a>{' '}
+                and{' '}
+                <a href="https://apps.apple.com/us/app/shibboleth/id6472225686">App Store</a>!
+            </p>
           </aside>
         </div>
         <div>
