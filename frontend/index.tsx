@@ -489,6 +489,8 @@ const formatTimeInterval = (seconds: number) => {
   return `${(seconds / 24 / 60 / 60).toFixed(1)} days`;
 };
 
+const RECONNECT_AFTER_HIDDEN_MS = 5000;
+
 class CastlefallApp extends Component<{}, CastlefallState> {
   ws: WebSocket | undefined;
   // set when the server deliberately disconnected us (kicked / name taken),
@@ -496,6 +498,7 @@ class CastlefallApp extends Component<{}, CastlefallState> {
   noReconnect: boolean = false;
   reconnectAttempts: number = 0;
   reconnectTimer: number | undefined = undefined;
+  hiddenAt: number | undefined = undefined;
   msgWrapRef: any; // React.Ref<HTMLDivElement>;
 
   constructor(props: {}) {
@@ -789,19 +792,33 @@ class CastlefallApp extends Component<{}, CastlefallState> {
 
   // Mobile browsers often kill the socket while the screen is locked; when
   // the page becomes visible again, reconnect right away instead of waiting
-  // for the backoff timer.
+  // for the backoff timer. After a long enough absence, reconnect even if the
+  // socket still reports open: the connection may have died without the
+  // browser noticing (e.g. the network changed while the screen was locked).
   handleVisibilityChange = () => {
-    if (document.visibilityState !== "visible") return;
+    if (document.visibilityState !== "visible") {
+      this.hiddenAt = Date.now();
+      return;
+    }
+    const wasHiddenLong =
+      this.hiddenAt !== undefined &&
+      Date.now() - this.hiddenAt >= RECONNECT_AFTER_HIDDEN_MS;
+    this.hiddenAt = undefined;
     const { room, myName } = this.state;
     if (
       room &&
       !this.noReconnect &&
-      (!this.ws ||
+      (wasHiddenLong ||
+        !this.ws ||
         this.ws.readyState === WebSocket.CLOSED ||
         this.ws.readyState === WebSocket.CLOSING)
     ) {
-      if (this.ws) {
-        this.ws.onclose = null;
+      const oldWs = this.ws;
+      if (oldWs) {
+        oldWs.onclose = null;
+        oldWs.onmessage = null;
+        oldWs.onerror = null;
+        oldWs.close();
       }
       this.openSocket(room, myName);
     }
