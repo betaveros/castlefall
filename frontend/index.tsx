@@ -491,6 +491,11 @@ const formatTimeInterval = (seconds: number) => {
 
 class CastlefallApp extends Component<{}, CastlefallState> {
   ws: WebSocket | undefined;
+  // set when the server deliberately disconnected us (kicked / name taken),
+  // so we don't automatically rejoin
+  noReconnect: boolean = false;
+  reconnectAttempts: number = 0;
+  reconnectTimer: number | undefined = undefined;
   msgWrapRef: any; // React.Ref<HTMLDivElement>;
 
   constructor(props: {}) {
@@ -598,9 +603,27 @@ class CastlefallApp extends Component<{}, CastlefallState> {
         break;
     }
 
+    this.noReconnect = false;
+    this.reconnectAttempts = 0;
+    this.openSocket(room, myName);
+  }
+
+  // Opens a websocket and (re-)registers in the room. Called on initial
+  // connect and again automatically whenever the socket drops (e.g. a mobile
+  // browser suspending the tab when the screen locks). The server already
+  // lets a disconnected name be reclaimed and resends that player's word.
+  openSocket(room: string, myName: string | undefined) {
+    if (this.reconnectTimer !== undefined) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
     const ws = new WebSocket(WEBSOCKET_URL);
     this.ws = ws;
-    ws.onopen = function() {
+    ws.onopen = () => {
+      if (this.reconnectAttempts > 0) {
+        this.addMessage("connect", "Reconnected");
+      }
+      this.reconnectAttempts = 0;
       ws.send(
         JSON.stringify({
           name: myName || null,
@@ -609,7 +632,21 @@ class CastlefallApp extends Component<{}, CastlefallState> {
       );
     };
     ws.onclose = event => {
-      this.addMessage("error", "Connection closed: " + JSON.stringify(event));
+      if (this.ws !== ws || this.noReconnect) {
+        this.addMessage("error", "Connection closed: " + JSON.stringify(event));
+        return;
+      }
+      if (this.reconnectAttempts === 0) {
+        this.addMessage("error", "Connection lost, reconnecting...");
+      }
+      const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 10000);
+      this.reconnectAttempts++;
+      this.reconnectTimer = window.setTimeout(() => {
+        this.reconnectTimer = undefined;
+        if (this.ws === ws && !this.noReconnect) {
+          this.openSocket(room, myName);
+        }
+      }, delay);
     };
     ws.onerror = event => {
       this.addMessage("error", "Connection error: " + JSON.stringify(event));
@@ -647,7 +684,13 @@ class CastlefallApp extends Component<{}, CastlefallState> {
             status: "active"
           };
 
-          if (roundNumber) {
+          const alreadyHave = this.state.rounds.some(
+            r => r.roundNumber === roundNumber
+          );
+          if (roundNumber && alreadyHave) {
+            // resent after a reconnect; we already show this round
+            this.setState({ lastRound: roundNumber });
+          } else if (roundNumber) {
             if (secondsAgo) {
               this.addMessage(
                 "roundstartpast",
@@ -668,6 +711,9 @@ class CastlefallApp extends Component<{}, CastlefallState> {
           }
         }
         if (data.error) {
+          if (String(data.error).startsWith("Disconnected:")) {
+            this.noReconnect = true;
+          }
           this.addMessage("error", data.error);
         }
         if (data.chat) {
@@ -741,11 +787,37 @@ class CastlefallApp extends Component<{}, CastlefallState> {
     };
   }
 
+  // Mobile browsers often kill the socket while the screen is locked; when
+  // the page becomes visible again, reconnect right away instead of waiting
+  // for the backoff timer.
+  handleVisibilityChange = () => {
+    if (document.visibilityState !== "visible") return;
+    const { room, myName } = this.state;
+    if (
+      room &&
+      !this.noReconnect &&
+      (!this.ws ||
+        this.ws.readyState === WebSocket.CLOSED ||
+        this.ws.readyState === WebSocket.CLOSING)
+    ) {
+      if (this.ws) {
+        this.ws.onclose = null;
+      }
+      this.openSocket(room, myName);
+    }
+  };
+
   componentDidMount() {
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
     this.connect(window.location.hash || "#lobby", "load");
   }
 
   componentWillUnmount() {
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+    this.noReconnect = true;
+    if (this.reconnectTimer !== undefined) {
+      clearTimeout(this.reconnectTimer);
+    }
     if (this.ws) {
       this.ws.close();
     }
